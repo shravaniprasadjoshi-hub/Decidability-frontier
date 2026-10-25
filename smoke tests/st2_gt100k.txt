@@ -1,0 +1,85 @@
+n=195665  Y_MODE=gt100k  base rate of Y = 0.167   selection: stratum, noise_sd=1.0
+
+===== GAMMA=0.0: approval 0.600  Y|approved=0.065  Y|rejected=0.321  uncond gap=+0.256
+-- stratum profile at J=5 (delta_true max=0.008, w-mean=0.002). Exposure uses delta=w-mean and a typical cell of N_ref=5000 / 32 cells
+  j |   n_j | pi_j  | mu_obs | mu_miss | d_j    | z_low=(mu-d)/sd | z_up=(1-d-mu)/sd | exposed (|z|<2 & rho>0.3)
+  0 |  39133 | 0.964 | 0.001  |  0.002  | +0.001 |       -0.2      |      +147.4      |   no
+  1 |  39132 | 0.860 | 0.008  |  0.009  | +0.001 |       +0.3      |       +57.4      |   no
+  2 |  39133 | 0.648 | 0.040  |  0.041  | +0.001 |       +0.9      |       +21.9      |   YES
+  3 |  39134 | 0.377 | 0.188  |  0.187  | -0.001 |       +1.6      |        +7.1      |   YES
+  4 |  39133 | 0.152 | 0.592  |  0.600  | +0.008 |       +2.6      |        +1.8      |   YES
+   audit N=  2000: median unexplored share u_g (cells with n_g>=20) = 0.00  [max 0.46]
+   audit N=  2000: thin strata (<10 approved in cell): median share 0.70  [max 1.00]
+   audit N=  5000: median unexplored share u_g (cells with n_g>=20) = 0.00  [max 0.29]
+   audit N=  5000: thin strata (<10 approved in cell): median share 0.40  [max 1.00]
+   audit N= 20000: median unexplored share u_g (cells with n_g>=20) = 0.00  [max 0.12]
+   audit N= 20000: thin strata (<10 approved in cell): median share 0.20  [max 0.80]
+
+===== GAMMA=0.02: approval 0.600  Y|approved=0.062  Y|rejected=0.325  uncond gap=+0.262
+-- stratum profile at J=5 (delta_true max=0.027, w-mean=0.011). Exposure uses delta=w-mean and a typical cell of N_ref=5000 / 32 cells
+  j |   n_j | pi_j  | mu_obs | mu_miss | d_j    | z_low=(mu-d)/sd | z_up=(1-d-mu)/sd | exposed (|z|<2 & rho>0.3)
+  0 |  39133 | 0.964 | 0.001  |  0.003  | +0.001 |       -1.4      |      +147.6      |   no
+  1 |  39132 | 0.860 | 0.008  |  0.012  | +0.004 |       -0.2      |       +58.8      |   no
+  2 |  39133 | 0.648 | 0.038  |  0.045  | +0.007 |       +0.6      |       +22.4      |   YES
+  3 |  39134 | 0.377 | 0.179  |  0.192  | +0.013 |       +1.5      |        +7.3      |   YES
+  4 |  39133 | 0.151 | 0.576  |  0.603  | +0.027 |       +2.5      |        +1.8      |   YES
+   audit N=  2000: median unexplored share u_g (cells with n_g>=20) = 0.00  [max 0.13]
+   audit N=  2000: thin strata (<10 approved in cell): median share 0.80  [max 1.00]
+   audit N=  5000: median unexplored share u_g (cells with n_g>=20) = 0.00  [max 0.20]
+   audit N=  5000: thin strata (<10 approved in cell): median share 0.40  [max 1.00]
+   audit N= 20000: median unexplored share u_g (cells with n_g>=20) = 0.00  [max 0.22]
+   audit N= 20000: thin strata (<10 approved in cell): median share 0.20  [max 0.80]
+
+===== GAMMA=0.05: approval 0.600  Y|approved=0.058  Y|rejected=0.331  uncond gap=+0.273
+-- stratum profile at J=5 (delta_true max=0.057, w-mean=0.026). Exposure uses delta=w-mean and a typical cell of N_ref=5000 / 32 cells
+  j |   n_j | pi_j  | mu_obs | mu_miss | d_j    | z_low=(mu-d)/sd | z_up=(1-d-mu)/sd | exposed (|z|<2 & rho>0.3)
+  0 |  39133 | 0.964 | 0.001  |  0.010  | +0.009 |       -4.1      |      +162.1      |   no
+  1 |  39132 | 0.860 | 0.007  |  0.017  | +0.010 |       -1.2      |       +61.4      |   no
+  2 |  39133 | 0.649 | 0.034  |  0.052  | +0.018 |       +0.2      |       +23.3      |   YES
+  3 |  39134 | 0.376 | 0.165  |  0.200  | +0.035 |       +1.3      |        +7.5      |   YES
+  4 |  39133 | 0.152 | 0.551  |  0.608  | +0.057 |       +2.3      |        +1.9      |   YES
+   audit N=  2000: median unexplored share u_g (cells with n_g>=20) = 0.00  [max 0.10]
+   audit N=  2000: thin strata (<10 approved in cell): median share 0.80  [max 1.00]
+   audit N=  5000: median unexplored share u_g (cells with n_g>=20) = 0.00  [max 0.19]
+   audit N=  5000: thin strata (<10 approved in cell): median share 0.40  [max 1.00]
+   audit N= 20000: median unexplored share u_g (cells with n_g>=20) = 0.00  [max 0.12]
+   audit N= 20000: thin strata (<10 approved in cell): median share 0.20  [max 0.60]
+
+===== GAMMA=0.1: approval 0.600  Y|approved=0.052  Y|rejected=0.341  uncond gap=+0.289
+-- stratum profile at J=5 (delta_true max=0.103, w-mean=0.051). Exposure uses delta=w-mean and a typical cell of N_ref=5000 / 32 cells
+  j |   n_j | pi_j  | mu_obs | mu_miss | d_j    | z_low=(mu-d)/sd | z_up=(1-d-mu)/sd | exposed (|z|<2 & rho>0.3)
+  0 |  39133 | 0.964 | 0.001  |  0.025  | +0.025 |      -12.4      |      +231.9      |   no
+  1 |  39132 | 0.859 | 0.005  |  0.027  | +0.022 |       -3.4      |       +69.4      |   no
+  2 |  39133 | 0.649 | 0.028  |  0.064  | +0.035 |       -0.6      |       +25.1      |   YES
+  3 |  39134 | 0.376 | 0.144  |  0.213  | +0.070 |       +0.9      |        +7.9      |   YES
+  4 |  39133 | 0.152 | 0.512  |  0.615  | +0.103 |       +2.0      |        +1.9      |   YES
+   audit N=  2000: median unexplored share u_g (cells with n_g>=20) = 0.00  [max 0.15]
+   audit N=  2000: thin strata (<10 approved in cell): median share 0.80  [max 1.00]
+   audit N=  5000: median unexplored share u_g (cells with n_g>=20) = 0.00  [max 0.25]
+   audit N=  5000: thin strata (<10 approved in cell): median share 0.50  [max 1.00]
+   audit N= 20000: median unexplored share u_g (cells with n_g>=20) = 0.00  [max 0.14]
+   audit N= 20000: thin strata (<10 approved in cell): median share 0.20  [max 0.80]
+
+===== SUMMARY: ratio = |uncond gap| / max|d_j|;  gamma=0 rows are the binning floor (no hidden confounding)
+ gamma |  J | uncond | max|d_j| | w-mean|d_j| | ratio | strata used
+  0.00 |  3 | +0.256 |  0.118   |    0.047     |   2.2 | 3/3
+  0.00 |  5 | +0.256 |  0.008   |    0.002     |  30.3 | 5/5
+  0.00 | 10 | +0.256 |  0.014   |    0.004     |  18.1 | 10/10
+  0.02 |  3 | +0.262 |  0.134   |    0.055     |   2.0 | 3/3
+  0.02 |  5 | +0.262 |  0.027   |    0.011     |   9.8 | 5/5
+  0.02 | 10 | +0.262 |  0.034   |    0.011     |   7.7 | 10/10
+  0.05 |  3 | +0.273 |  0.157   |    0.069     |   1.7 | 3/3
+  0.05 |  5 | +0.273 |  0.057   |    0.026     |   4.8 | 5/5
+  0.05 | 10 | +0.273 |  0.067   |    0.026     |   4.1 | 10/10
+  0.10 |  3 | +0.289 |  0.195   |    0.092     |   1.5 | 3/3
+  0.10 |  5 | +0.289 |  0.103   |    0.051     |   2.8 | 5/5
+  0.10 | 10 | +0.289 |  0.111   |    0.051     |   2.6 | 10/10
+
+profile CSV written: profile_gt100k_stratum_noise1.0.csv
+
+CELL SIZES in an audit sample (independent of gamma)
+N=  2000: cells=32  share with n_g<100: 0.78   median n_g 49
+N=  5000: cells=32  share with n_g<100: 0.47   median n_g 122
+N= 20000: cells=32  share with n_g<100: 0.09   median n_g 502
+
+Note: pass criterion should be decidability (delta_true*(rho_g+rho_ref) vs tau and z*se), not the ratio alone. Thresholds are the team's call.
