@@ -1,0 +1,12 @@
+# One axis at a time on top of primary.yaml.
+axes:
+  - {name: y_threshold, values: [100000], _status: acked, _ref: D3 stress}
+  - {name: tau,         values: [0.02],   _status: acked, _ref: A1}
+  - {name: m_min,       values: [1],      _status: acked, _ref: A3/B8c}     # 30 dropped: not in the acked doc
+  - {name: noise_sd,    values: [0.5],    _status: acked, _ref: B6}         # delta_true ~2.1-2.8 x gamma there
+  - {name: J,           values: [10],     _status: acked, _ref: A13, gate: "ST1 profile-mode kink check at J=10 first"}
+  - {name: audit_n,     values: [5000],   _status: acked, _ref: D5}
+  - {name: delta_mult,  values: [0.5],    _status: acked, _ref: B8b}        # misspecification
+  - {name: multiplicity, values: [bonferroni, none], _status: acked, _ref: A2}
+  - {name: reference,   values: [second_largest, complement], _status: proposed}
+  - {name: multiplicity, values: [holm_shaffer], _status: proposed, note: "N8.1: divisor min(remaining,K); FWER-valid, expected small gain"}

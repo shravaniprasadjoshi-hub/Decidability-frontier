@@ -1,0 +1,80 @@
+# main settings for all runs. _status: acked = team agreed (proposals doc, item number in _ref)
+#   in_code = value i copied from a script, no doc says it
+#   proposed = just a suggestion, team hasnt agreed. nothing is locked yet
+# dont change an acked block without telling the team, and rerun whatever depends on it
+
+data:
+  _status: acked # D3 is carried as standing in the doc (B6: "primary regime stays noise 1.0 (D3)"), not itemised
+  _ref: D3, ST2
+  state: CA
+  year: "2018"
+  y_threshold: 50000 # gt50k primary; gt100k = stress
+  score_excludes: [SEX, RAC1P]
+  min_per_side: 30
+
+selection:
+  _status: acked
+  _ref: D3, A6
+  mode: stratum
+  j_sel: 5
+  noise_sd: 1.0
+  approval_rate: 0.60
+  gammas: [0.02, 0.03, 0.04, 0.05, 0.10]   # A6: add .03/.04 (parity transition between .02 and .05); .1 kept for disparity side
+
+strata:
+  _status: acked
+  _ref: D3, A13
+  J: 5 # J=3 dropped (binning leakage 0.087). J=10 only after ST1 profile-mode kink check at J=10
+  global: true
+
+reference:
+  _status: acked
+  _ref: A7
+  rule: largest_cell_by_count  # counts only. CA seed 0 -> '1.0|W|45-59'; rho_ref = 0.50 (controlled arm)
+  K: 31
+
+sensitivity_model:
+  _status: acked
+  _ref: A5
+  form: additive_shared_delta
+  oracle_delta: propensity_max_cell_x_stratum # realized max = noisy diagnostic only
+
+certificate:
+  _status: acked
+  _ref: A1, A2, A3, A8, A10
+  inference_bounds: unclipped  # clipped = footnote (A8)
+  se_between_strata_term: true # D2
+  m_min: 10 # A3: do not go below 10 without rerunning E1 (B8a)
+  tau: 0.05 # primary; 0.02 = sensitivity
+  multiplicity: holm
+  family: 2K # 62 hypotheses = 31 cells x {disparity null, parity null}; per-cell uncorrected = secondary table
+  correction: alpha/2K # (Bonferroni arm); Holm step-down over m=2K
+  guarantee: unconditional     # over (X,D,Y); also report conditional-on-E coverage
+
+alpha:
+  _status: in_code # b8a/b8b ALPHA=0.05
+  value: 0.05
+
+audit:
+  _status: in_code # b8b N_LIST=[5000,20000]; b8c adds the 195665 pool size (iid resampling, not a census)
+  n_list: [5000, 20000, 195665]
+  reps: {e1_coverage: 1000, e2_error_control: 300, e4_n_sweep: 200}   # script defaults / reported runs
+
+controlled_arm:
+  _status: acked
+  _ref: A12
+  grid_max: 0.15
+  flip_seeds: [123] # the only one run so far
+  recompute_delta_true: true   # delta ~1.2 x gamma here (0.024/0.063/0.123 at gamma .02/.05/.1)
+  flip_seeds_proposed: [124, 125]   # proposed
+
+seeds:
+  _status: proposed # >=3 selection seeds per E-run is in plan
+  selection: [0, 1, 2]
+  states: [CA]
+
+scope:
+  option_c: cut # A9 (acked)
+  hmda: undecided # we need to decide on this, as of now mentioned in one-pager
+  le_cam_gate: "2026-11-01" # A4
+  implementation_deadline: "2026-11-15"
