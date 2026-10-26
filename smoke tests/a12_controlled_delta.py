@@ -27,7 +27,7 @@ STATE, YEAR = os.environ.get("STATE", "CA"), "2018"
 SEED, FLIP_SEED = int(os.environ.get("SEED", 0)), int(os.environ.get("FLIP_SEED", 123))
 Y_THR, NOISE_SD, J, J_SEL, APPROVAL = 50000, 1.0, 5, 5, 0.60
 GAMMAS, TAUS, M_MIN, MIN_PER_SIDE = [0.02, 0.05, 0.1], [0.05, 0.02], 10, 30
-GRID = np.array([-.15, -.10, -.07, -.04, -.02, -.005, .005, .02, .04, .07, .10, .15])   # 6/12 within +-0.05
+GRID = np.array([-.15, -.10, -.07, -.055, -.045, -.022, -.018, -.005, .005, .018, .022, .045, .055, .07, .10, .15])   # 8/16 within +-0.05, edge cells at ~0.9/1.1 tau for tau .05 and .02
 rng = np.random.default_rng(SEED)
 
 def load():
@@ -41,7 +41,7 @@ def load():
         return X, np.where(y == 1, 50001 + rng.exponential(40000, n), rng.uniform(1000, 50000, n))
     
     from folktables import ACSDataSource, ACSIncome
-    acs = ACSDataSource(survey_year=YEAR, horizon="1-Year", survey="person").get_data(states=[STATE], download=True)
+    acs = ACSDataSource(survey_year=YEAR, horizon="1-Year", survey="person", root_dir="./smoke tests/data").get_data(states=[STATE], download=True)
     X, y, _ = ACSIncome.df_to_pandas(acs)
     pinc = ACSIncome._preprocess(acs)["PINCP"].values
     assert len(pinc) == len(X) and ((pinc > 50000).astype(int) == y.iloc[:, 0].values).all(), "PINCP misaligned"
@@ -124,4 +124,4 @@ for g in GAMMAS:
         print(f"  tau={t}: |Dc|<tau {(R.Dc.abs()<t).sum()}/{len(R)} | parity feasible at delta=0 {(pr>=0).sum()} | parity certifiable at delta={dlt:.3f}: {(pr>dlt).sum()} | "
               f"disparity certifiable: {(ds>dlt).sum()} | d*_disp in [0.02,0.10]: {((ds>=0.02)&(ds<=0.10)).sum()} | d*_par in [0.005,0.10]: {((pr>=0.005)&(pr<=0.10)).sum()}")
 
-pd.DataFrame(rows).to_csv(f"a12_controlled_{STATE}_{SEED}_{FLIP_SEED}.csv", index=False); print(f"\nsaved a12_controlled_{STATE}_{SEED}_{FLIP_SEED}.csv")
+pd.DataFrame(rows).to_csv(f"smoke tests/a12_controlled_{STATE}_{SEED}_{FLIP_SEED}_g16.csv", index=False); print(f"\nsaved a12_controlled_{STATE}_{SEED}_{FLIP_SEED}_g16.csv")

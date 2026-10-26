@@ -1,7 +1,7 @@
 """MC check of the certificate se at larger delta (open item: only checked at delta=0.03).
 Run: python se_check.py   (needs bounds.py, numpy). Prints mean(se)/empirical sd for both endpoints; want ~1.00 (+-0.05)."""
 import numpy as np
-from bounds import Cell, endpoints
+from core.bounds import Cell, endpoints
 rng = np.random.default_rng(0); J, R = 5, 3000
 w = np.ones(J) / J; pi = np.linspace(.9, .3, J); mu = np.linspace(.03, .70, J)
 print(" delta |    n | se_L/sd_L  se_U/sd_U | (no composition term: L, U)")

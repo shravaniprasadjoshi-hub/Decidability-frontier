@@ -1,8 +1,10 @@
 """
 B8a: per-cell coverage of the identified-set ENDPOINTS, CLT margin (bounds.py) vs exact (Clopper-Pearson + union bound), natural cells.
 
-usage: python b8a_coverage.py
-needs bounds.py. 
+usage from repo root:
+    set PYTHONPATH=.;core
+    python "smoke tests/b8a_coverage.py"
+needs bounds.py
 
 Env: STATE (CA), SEED (0), R (reps, 1000), SYNTH=1 (offline logic test only)
 
@@ -19,14 +21,14 @@ import os, numpy as np, pandas as pd
 from scipy.special import ndtr
 from scipy.stats import beta
 from sklearn.ensemble import HistGradientBoostingClassifier
-from bounds import Cell, endpoints
+from core.bounds import Cell, endpoints
 
 # CONFIG 
 STATE, YEAR = os.environ.get("STATE", "CA"), "2018"
-SEED = int(os.environ.get("SEED", 0)); R = int(os.environ.get("R", 200))
+SEED = int(os.environ.get("SEED", 0)); R = int(os.environ.get("R", 1000))
 Y_THR, NOISE_SD, J, J_SEL, APPROVAL = 50000, 1.0, 5, 5, 0.60
 GAMMAS, N_LIST = [0.02, 0.05, 0.1], [5000, 20000]
-M_MIN, MIN_PER_SIDE = 10, 30
+M_MIN, MIN_PER_SIDE = int(os.environ.get("M_MIN", 10)), 30
 Z, ALPHA, TAU = 1.645, 0.05, 0.05 # one-sided per endpoint, single-test z (NOT multiplicity-adjusted)
 NBINS = [0, 50, 100, 200, 500, 10**9]
 rng = np.random.default_rng(SEED) # setup stream (must stay identical to st3)
@@ -42,7 +44,7 @@ def load():
         y = (rng.random(n) < 1 / (1 + np.exp(-lin))).astype(int)
         return X, np.where(y == 1, 50001 + rng.exponential(40000, n), rng.uniform(1000, 50000, n))
     from folktables import ACSDataSource, ACSIncome
-    acs = ACSDataSource(survey_year=YEAR, horizon="1-Year", survey="person").get_data(states=[STATE], download=True)
+    acs = ACSDataSource(survey_year=YEAR, horizon="1-Year", survey="person", root_dir="./smoke tests/data").get_data(states=[STATE], download=True)
     X, y, _ = ACSIncome.df_to_pandas(acs)
     pinc = ACSIncome._preprocess(acs)["PINCP"].values
     assert len(pinc) == len(X) and ((pinc > 50000).astype(int) == y.iloc[:, 0].values).all(), "PINCP misaligned"
@@ -157,5 +159,5 @@ for g in GAMMAS:
         print(f"--- gamma={g} N={N}: disparity-certificate rate (z={Z}, no multiplicity) by whether |Delta_true|<=tau (those are WRONG certs)")
         print(df.groupby("near").agg(cells=("c", "nunique"), clt=("cd_clt", "mean"), exact=("cd_ex", "mean")).round(3).to_string())
 
-pd.concat(allrows).drop(columns=["ngbin", "nun2"], errors="ignore").groupby(["gamma", "N", "cell"]).mean(numeric_only=True).to_csv(f"b8a_coverage_{STATE}_{SEED}.csv")
-print(f"\nsaved b8a_coverage_{STATE}_{SEED}.csv (per-cell means)")
+pd.concat(allrows).drop(columns=["ngbin", "nun2"], errors="ignore").groupby(["gamma", "N", "cell"]).mean(numeric_only=True).to_csv(f"smoke tests/b8a_coverage_{STATE}_{SEED}_m{M_MIN}_R{R}.csv")
+print(f"\nsaved b8a_coverage_{STATE}_{SEED}_m{M_MIN}_R{R}.csv (per-cell means)")

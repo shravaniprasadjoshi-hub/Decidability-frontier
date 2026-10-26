@@ -38,7 +38,7 @@ def load():
         return X, np.where(y == 1, 50001 + rng.exponential(40000, n), rng.uniform(1000, 50000, n))
     
     from folktables import ACSDataSource, ACSIncome
-    acs = ACSDataSource(survey_year=YEAR, horizon="1-Year", survey="person").get_data(states=[STATE], download=True)
+    acs = ACSDataSource(survey_year=YEAR, horizon="1-Year", survey="person", root_dir="./smoke tests/data").get_data(states=[STATE], download=True)
     X, y, _ = ACSIncome.df_to_pandas(acs)
     pinc = ACSIncome._preprocess(acs)["PINCP"].values
     assert len(pinc) == len(X) and ((pinc > 50000).astype(int) == y.iloc[:, 0].values).all(), "PINCP misaligned"
@@ -152,4 +152,4 @@ for N in N_LIST:
         out.append(row)
 
 T = pd.DataFrame(out); pd.set_option("display.width", 220, "display.max_columns", 30)
-print(T.round(3).to_string(index=False)); T.to_csv(f"b8c_{STATE}_{SEED}_{FLIP_SEED}_g{G}_m{M_MIN}.csv", index=False)
+print(T.round(3).to_string(index=False)); T.to_csv(f"smoke tests/b8c_{STATE}_{SEED}_{FLIP_SEED}_g{G}_m{M_MIN}.csv", index=False)

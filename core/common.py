@@ -19,7 +19,7 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 
 Y_THR, NOISE_SD, J, J_SEL, APPROVAL = 50000, 1.0, 5, 5, 0.60
 MIN_PER_SIDE, M_MIN_DEFAULT = 30, 10
-GRID = np.array([-.15, -.10, -.07, -.04, -.02, -.005, .005, .02, .04, .07, .10, .15])   # 6/12 within +-0.05
+GRID = np.array([-.15, -.10, -.07, -.055, -.045, -.022, -.018, -.005, .005, .018, .022, .045, .055, .07, .10, .15])   # 8/16 within +-0.05, edge cells at ~0.9/1.1 tau for tau .05 and .02
 
 def _load(state, year, rng):
     if os.environ.get("SYNTH"):

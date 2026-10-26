@@ -1,7 +1,9 @@
 """
 B8b: audit-level error control + power on the controlled-Delta arm (A12 setup).
 
-usage: python b8b_error_power.py
+usage from repo root:
+    set PYTHONPATH=.;core
+    python "smoke tests/b8b_error_power.py"
 
 Env: STATE (CA), SEED (0), FLIP_SEED (123), R (reps, 300), SYNTH=1
 
@@ -24,15 +26,16 @@ Pre-registered: at mult=1, Holm any-wrong rate <= 0.05 (+MC se ~1.3pp at R=300) 
 """
 import os, numpy as np, pandas as pd
 from scipy.special import ndtr
+from scipy.stats import beta
 from sklearn.ensemble import HistGradientBoostingClassifier
-from bounds import Cell, endpoints, breakdown
+from core.bounds import Cell, endpoints, breakdown
 
 # CONFIG 
 STATE, YEAR = os.environ.get("STATE", "CA"), "2018"
 SEED, FLIP_SEED = int(os.environ.get("SEED", 0)), int(os.environ.get("FLIP_SEED", 123))
 Y_THR, NOISE_SD, J, J_SEL, APPROVAL = 50000, 1.0, 5, 5, 0.60
 GAMMAS, TAUS, M_MIN, MIN_PER_SIDE = [0.02, 0.05, 0.1], [0.05, 0.02], 10, 30
-GRID = np.array([-.15, -.10, -.07, -.04, -.02, -.005, .005, .02, .04, .07, .10, .15])   # 6/12 within +-0.05
+GRID = np.array([-.15, -.10, -.07, -.055, -.045, -.022, -.018, -.005, .005, .018, .022, .045, .055, .07, .10, .15])   # 8/16 within +-0.05, edge cells at ~0.9/1.1 tau for tau .05 and .02
 rng = np.random.default_rng(SEED)
 
 def load():
@@ -46,7 +49,7 @@ def load():
         return X, np.where(y == 1, 50001 + rng.exponential(40000, n), rng.uniform(1000, 50000, n))
     
     from folktables import ACSDataSource, ACSIncome
-    acs = ACSDataSource(survey_year=YEAR, horizon="1-Year", survey="person").get_data(states=[STATE], download=True)
+    acs = ACSDataSource(survey_year=YEAR, horizon="1-Year", survey="person", root_dir="./smoke tests/data").get_data(states=[STATE], download=True)
     X, y, _ = ACSIncome.df_to_pandas(acs)
     pinc = ACSIncome._preprocess(acs)["PINCP"].values
     assert len(pinc) == len(X) and ((pinc > 50000).astype(int) == y.iloc[:, 0].values).all(), "PINCP misaligned"
@@ -159,7 +162,10 @@ for g in GAMMAS:
                         a["pp"].append((rej[K:] & pok).sum() / pok.sum() if pok.any() else np.nan)
         
         for (mult, tau, proc), a in acc.items():
-            out.append(dict(gamma=g, N=N, mult=mult, tau=tau, proc=proc, any_wrong=np.mean(a["any"]), mean_wrong=np.mean(a["nw"]),
+            kk = int(round(np.sum(a["any"])))   # reps with at least one wrong cert
+            ci_lo = beta.ppf(0.025, kk, R - kk + 1) if kk > 0 else 0.0   # clopper-pearson 95%
+            ci_hi = beta.ppf(0.975, kk + 1, R - kk) if kk < R else 1.0
+            out.append(dict(gamma=g, N=N, mult=mult, tau=tau, proc=proc, R=R, any_wrong=np.mean(a["any"]), any_lo=ci_lo, any_hi=ci_hi, mean_wrong=np.mean(a["nw"]),
                             power_disp=np.nanmean(a["pd"]) if not np.all(np.isnan(a["pd"])) else np.nan,
                             power_par=np.nanmean(a["pp"]) if not np.all(np.isnan(a["pp"])) else np.nan,
                             n_disp_ok=int((dstar[tau][0] > mult * dlt).sum()), n_par_ok=int((dstar[tau][1] > mult * dlt).sum())))
@@ -167,4 +173,4 @@ for g in GAMMAS:
         pd.set_option("display.width", 220, "display.max_columns", 30)
         print(f"\n--- gamma={g} N={N}\n" + T.round(3).to_string(index=False))
 
-pd.DataFrame(out).to_csv(f"b8b_{STATE}_{SEED}_{FLIP_SEED}.csv", index=False); print(f"\nsaved b8b_{STATE}_{SEED}_{FLIP_SEED}.csv")
+pd.DataFrame(out).to_csv(f"smoke tests/b8b_{STATE}_{SEED}_{FLIP_SEED}_g16.csv", index=False); print(f"\nsaved b8b_{STATE}_{SEED}_{FLIP_SEED}_g16.csv")
