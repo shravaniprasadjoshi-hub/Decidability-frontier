@@ -41,7 +41,7 @@ def _load(state, year, rng):
     assert len(pinc) == len(X) and ((pinc > 50000).astype(int) == y.iloc[:, 0].values).all(), "PINCP misaligned"
     return X.reset_index(drop=True), pinc
 
-def build(state="CA", seed=0, flip_seed=None, grid=GRID, year="2018"):
+def build(state="CA", seed=0, flip_seed=None, grid=GRID, year="2018", noise_sd=NOISE_SD):
     rng = np.random.default_rng(seed)
     X, pinc = _load(state, year, rng); Y0 = (pinc > Y_THR).astype(int); n = len(Y0)
     race = np.select([X.RAC1P == 1, X.RAC1P == 2, X.RAC1P == 6], ["W", "B", "A"], "O")
@@ -73,8 +73,8 @@ def build(state="CA", seed=0, flip_seed=None, grid=GRID, year="2018"):
     
     def select(gamma, eps=eps0):
         """D and the TRUE propensity P(D=1|X,Y) = Phi((q - base - gamma r)/noise_sd), q = realized approval threshold."""
-        lat = base + gamma * r + NOISE_SD * eps; q = np.quantile(lat, APPROVAL)
-        return (lat <= q).astype(int), ndtr((q - base - gamma * r) / NOISE_SD)
+        lat = base + gamma * r + noise_sd * eps; q = np.quantile(lat, APPROVAL)
+        return (lat <= q).astype(int), ndtr((q - base - gamma * r) / noise_sd)
     
     def grouped(key, size, D, prop):
         bc = lambda m, w=None: np.bincount(key[m], weights=None if w is None else w[m], minlength=size)
