@@ -7,6 +7,8 @@ Reads smoke tests/b8c_crossover_{STATE}_{SEED}_{FLIP}_g{GAMMA}.csv (all that exi
 Needs bounds.py, common.py. Env: STATE (CA).  Run: python "smoke tests/b8c_trunc_diag.py"
 """
 import os, re, glob, numpy as np, pandas as pd
+pd.set_option("display.max_columns", 30)
+
 from bounds import Cell, gap
 from common import build, J, M_MIN_DEFAULT
 
@@ -46,7 +48,7 @@ for f in sorted(glob.glob(f"smoke tests/b8c_crossover_{STATE}_*_g*.csv")):
     d = pd.read_csv(f)
     for _, r in d.iterrows():
         c = names.index(r.cell); nt = nstar_trunc(c, r.kind, r.tau)
-        out.append(dict(seed=seed, gamma=G, tau=r.tau, kind=r.kind, cell=r.cell, n_cell=int(cnt["n"][c].sum()), Nstar=r.Nstar,
+        out.append(dict(seed=seed, flip=flip, gamma=G, tau=r.tau, kind=r.kind, cell=r.cell, n_cell=int(cnt["n"][c].sum()), Nstar=r.Nstar,
                         rebuild_relerr=abs(nstar_cf(c, r.kind, r.tau) / r.Nstar - 1), ng_at_Nstar=cnt["n"][c].sum() * r.Nstar / n,
                         Nstar_trunc=nt, Nstar_exp=nstar_cf(c, r.kind, r.tau, True), Nstar_trunc_exp=nstar_trunc(c, r.kind, r.tau, True), N50=r.N50, flag=r.flag))
     print("done", f)
@@ -66,6 +68,6 @@ print("\nby expected cell rows at the ORIGINAL N*:")
 print(o.groupby(pd.cut(o.ng_at_Nstar, [0, 150, 300, 600, 1e9])).agg(n=("ok", "size"), orig=("ok", "mean"), trunc=("ok_trunc", "mean"),
                                                                        med_ratio=("ratio", "median"), med_ratio_trunc=("ratio_trunc", "median")).round(2))
 print("\nrows failing under the original rule:")
-print(o[~o.ok][["seed", "gamma", "tau", "cell", "n_cell", "ng_at_Nstar", "Nstar", "Nstar_trunc", "Nstar_exp", "Nstar_trunc_exp", "N50", "ratio", "ratio_trunc", "ratio_exp", "ratio_trunc_exp"]].round(2).to_string(index=False))
+print(o[~o.ok][["seed", "flip", "gamma", "tau", "cell", "n_cell", "ng_at_Nstar", "Nstar", "Nstar_trunc", "Nstar_exp", "Nstar_trunc_exp", "N50", "ratio", "ratio_trunc", "ratio_exp", "ratio_trunc_exp"]].round(2).to_string(index=False))
 c = T[T.flag != "ok"]
 print(f"\nright-censored: {len(c)}; definite fails (Nstar < pool/2): {(c.Nstar < 195665 / 2).sum()}; with trunc N*: {(c.Nstar_trunc < 195665 / 2).sum()}")
