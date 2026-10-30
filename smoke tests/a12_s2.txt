@@ -1,0 +1,31 @@
+git=45562922a2+dirty cfg=b39b5dd1
+STATE=CA SEED=2 FLIP_SEED=789 n=195665 base rate 0.411 -> 0.624; ref='1.0|W|45-59' (n=19896), K=31
+target vs realized Delta_true: max|diff|=0.0008 (clipping only); natural Delta median |.|=0.250 -> controlled 0.045
+cells with |Delta_true|<=tau: tau=0.05: 16/31, tau=0.02: 8/31
+
+===== GAMMA=0.02: approval 0.600 | recomputed shared delta (propensity, max cell x stratum) = 0.025 (ratio to gamma 1.23; pooled 0.021)
+  rho_ref(explored)=0.482; per-cell S median 0.84 (range 0.72-1.06); |Dc - Delta_true| median 0.005
+  tau=0.05: |Dc|<tau 16/31 | parity feasible at delta=0 16 | parity certifiable at delta=0.025: 10 | disparity certifiable: 10 | d*_disp in [0.02,0.10]: 8 | d*_par in [0.005,0.10]: 14
+  tau=0.02: |Dc|<tau 8/31 | parity feasible at delta=0 7 | parity certifiable at delta=0.025: 0 | disparity certifiable: 16 | d*_disp in [0.02,0.10]: 15 | d*_par in [0.005,0.10]: 7
+
+===== GAMMA=0.03: approval 0.600 | recomputed shared delta (propensity, max cell x stratum) = 0.037 (ratio to gamma 1.23; pooled 0.032)
+  rho_ref(explored)=0.482; per-cell S median 0.84 (range 0.73-1.06); |Dc - Delta_true| median 0.005
+  tau=0.05: |Dc|<tau 15/31 | parity feasible at delta=0 15 | parity certifiable at delta=0.037: 7 | disparity certifiable: 7 | d*_disp in [0.02,0.10]: 8 | d*_par in [0.005,0.10]: 14
+  tau=0.02: |Dc|<tau 8/31 | parity feasible at delta=0 7 | parity certifiable at delta=0.037: 0 | disparity certifiable: 14 | d*_disp in [0.02,0.10]: 14 | d*_par in [0.005,0.10]: 7
+
+===== GAMMA=0.04: approval 0.600 | recomputed shared delta (propensity, max cell x stratum) = 0.049 (ratio to gamma 1.23; pooled 0.044)
+  rho_ref(explored)=0.482; per-cell S median 0.84 (range 0.73-1.06); |Dc - Delta_true| median 0.004
+  tau=0.05: |Dc|<tau 16/31 | parity feasible at delta=0 16 | parity certifiable at delta=0.049: 4 | disparity certifiable: 7 | d*_disp in [0.02,0.10]: 8 | d*_par in [0.005,0.10]: 14
+  tau=0.02: |Dc|<tau 8/31 | parity feasible at delta=0 7 | parity certifiable at delta=0.049: 0 | disparity certifiable: 11 | d*_disp in [0.02,0.10]: 14 | d*_par in [0.005,0.10]: 7
+
+===== GAMMA=0.05: approval 0.600 | recomputed shared delta (propensity, max cell x stratum) = 0.061 (ratio to gamma 1.23; pooled 0.055)
+  rho_ref(explored)=0.481; per-cell S median 0.84 (range 0.72-1.06); |Dc - Delta_true| median 0.006
+  tau=0.05: |Dc|<tau 14/31 | parity feasible at delta=0 14 | parity certifiable at delta=0.061: 0 | disparity certifiable: 5 | d*_disp in [0.02,0.10]: 8 | d*_par in [0.005,0.10]: 14
+  tau=0.02: |Dc|<tau 8/31 | parity feasible at delta=0 7 | parity certifiable at delta=0.061: 0 | disparity certifiable: 10 | d*_disp in [0.02,0.10]: 13 | d*_par in [0.005,0.10]: 7
+
+===== GAMMA=0.1: approval 0.600 | recomputed shared delta (propensity, max cell x stratum) = 0.121 (ratio to gamma 1.21; pooled 0.112)
+  rho_ref(explored)=0.482; per-cell S median 0.84 (range 0.73-1.06); |Dc - Delta_true| median 0.009
+  tau=0.05: |Dc|<tau 16/31 | parity feasible at delta=0 16 | parity certifiable at delta=0.121: 0 | disparity certifiable: 2 | d*_disp in [0.02,0.10]: 9 | d*_par in [0.005,0.10]: 14
+  tau=0.02: |Dc|<tau 8/31 | parity feasible at delta=0 8 | parity certifiable at delta=0.121: 0 | disparity certifiable: 2 | d*_disp in [0.02,0.10]: 13 | d*_par in [0.005,0.10]: 7
+
+saved smoke tests/a12_controlled_CA_2_789.csv

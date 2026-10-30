@@ -1,0 +1,47 @@
+done smoke tests\b8c_crossover_CA_0_123_g0.02.csv
+done smoke tests\b8c_crossover_CA_0_123_g0.03.csv
+done smoke tests\b8c_crossover_CA_0_123_g0.04.csv
+done smoke tests\b8c_crossover_CA_0_123_g0.05.csv
+done smoke tests\b8c_crossover_CA_1_456_g0.02.csv
+done smoke tests\b8c_crossover_CA_1_456_g0.03.csv
+done smoke tests\b8c_crossover_CA_1_456_g0.04.csv
+done smoke tests\b8c_crossover_CA_1_456_g0.05.csv
+done smoke tests\b8c_crossover_CA_2_789_g0.02.csv
+done smoke tests\b8c_crossover_CA_2_789_g0.03.csv
+done smoke tests\b8c_crossover_CA_2_789_g0.04.csv
+done smoke tests\b8c_crossover_CA_2_789_g0.05.csv
+
+rebuild check (closed form vs CSV Nstar): max rel err 2.22e-16  (should be ~0; else counts differ from the a12 run)
+
+pass within 2x, flag=ok only (orig N* vs truncation-aware N*):
+            n  orig  trunc  med_ratio  med_ratio_trunc
+kind tau                                              
+disp 0.02  71  0.90   0.99       1.25             1.07
+     0.05  46  0.87   0.98       1.39             1.03
+par  0.05  12  1.00   1.00       1.30             1.25
+
+by expected cell rows at the ORIGINAL N*:
+                        n  orig  trunc  med_ratio  med_ratio_trunc
+ng_at_Nstar                                                       
+(0.0, 150.0]           15  0.73   1.00       1.89             1.08
+(150.0, 300.0]         23  0.74   0.96       1.46             1.00
+(300.0, 600.0]         25  0.96   1.00       1.24             1.04
+(600.0, 1000000000.0]  66  0.97   0.98       1.14             1.09
+
+rows failing under the original rule:
+ seed  gamma  tau        cell  n_cell  ng_at_Nstar     Nstar  Nstar_trunc      N50  ratio  ratio_trunc
+    1   0.02 0.05 2.0|O|45-59    4049       136.02   6573.19     36929.09 33018.06   5.02         0.89
+    1   0.02 0.02   2.0|A|<30    3317       275.31  16240.16     39651.07 38717.58   2.38         0.98
+    1   0.02 0.02 2.0|B|30-44    1283        89.83  13700.26     24101.87 28710.24   2.10         1.19
+    1   0.03 0.05 2.0|O|45-59    4049       165.02   7974.24     36929.09 34167.63   4.28         0.93
+    1   0.03 0.02   2.0|A|<30    3317       428.90  25300.00     39651.07 51172.00   2.02         1.29
+    1   0.04 0.05 2.0|O|45-59    4049       199.45   9638.47     36929.09 35999.56   3.73         0.97
+    1   0.04 0.02   2.0|A|<30    3317       622.95  36746.98     41086.40 81039.85   2.21         1.97
+    1   0.05 0.05 2.0|O|45-59    4049       246.91  11931.69     36929.09 36829.59   3.09         1.00
+    1   0.05 0.02 2.0|O|45-59    4049       110.53   5341.15     36929.09 32686.12   6.12         0.89
+    2   0.02 0.02   2.0|O|60+    1185        71.09  11737.47     27785.83 24463.79   2.08         0.88
+    2   0.04 0.05   2.0|O|60+    1185       170.99  28233.61     32032.88 63177.31   2.24         1.97
+    2   0.05 0.05   2.0|O|60+    1185       216.30  35715.00     41086.40 83686.80   2.34         2.04
+    2   0.05 0.02 1.0|A|45-59    5113      4014.74 153636.46    158685.77 74110.90   0.48         0.47
+
+right-censored: 15; definite fails (Nstar < pool/2): 1; with trunc N*: 1

@@ -1,0 +1,39 @@
+gamma=0.02 oracle delta=0.025 R=1000 K=31 M_MIN=10
+N=5000 done
+N=10000 done
+N=20000 done
+N=35000 done
+N=50000 done
+N=75000 done
+N=100000 done
+N=150000 done
+N=195665 done
+ tau kind        cell     Nstar       N50           flag  ratio    ok  definite_fail
+0.05 disp 1.0|A|45-59  65476.99  69122.83             ok   1.06  True          False
+0.05 disp 1.0|O|30-44   6107.49   8688.84             ok   1.42  True          False
+0.05 disp   2.0|A|<30  57524.27 108380.07             ok   1.88  True          False
+0.05 disp 2.0|B|30-44  22770.67  46219.47             ok   2.03 False          False
+0.05 disp 2.0|O|45-59   5732.24  30438.63             ok   5.31 False          False
+0.05 disp 2.0|W|30-44  21387.81  31470.55             ok   1.47  True          False
+0.05 disp 2.0|W|45-59  23184.29  29866.59             ok   1.29  True          False
+0.05  par   1.0|A|<30 127381.71       inf right-censored    inf False          False
+0.05  par 1.0|O|45-59  94827.96  95935.64             ok   1.01  True          False
+0.05  par   2.0|O|60+ 174537.76       inf right-censored    inf False          False
+0.05  par   2.0|W|60+  52383.01  87293.86             ok   1.67  True          False
+0.02 disp 1.0|A|30-44  66862.80  91087.12             ok   1.36  True          False
+0.02 disp 1.0|A|45-59  14939.49  17592.33             ok   1.18  True          False
+0.02 disp 1.0|B|30-44 124851.35 160943.38             ok   1.29  True          False
+0.02 disp 2.0|A|45-59 193636.53       inf right-censored    inf False          False
+0.02 disp   2.0|A|<30  16827.41  36724.31             ok   2.18 False          False
+0.02 disp 2.0|B|30-44  13298.23  29445.04             ok   2.21 False          False
+0.02 disp 2.0|O|30-44  47234.00  54510.55             ok   1.15  True          False
+0.02 disp 2.0|W|30-44   6199.74   7998.37             ok   1.29  True          False
+0.02 disp 2.0|W|45-59   6344.81   7635.95             ok   1.20  True          False
+
+pass (within 2x), flag=ok only:
+            mean  size
+tau  kind            
+0.02 disp  0.75     8
+0.05 disp  0.71     7
+     par   1.00     2
+definite fails (right-censored, N* < pool/2): 0

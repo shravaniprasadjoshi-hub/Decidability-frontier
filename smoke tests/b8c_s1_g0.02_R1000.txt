@@ -1,0 +1,37 @@
+gamma=0.02 oracle delta=0.025 R=1000 K=31 M_MIN=10
+N=5000 done
+N=10000 done
+N=20000 done
+N=35000 done
+N=50000 done
+N=75000 done
+N=100000 done
+N=150000 done
+N=195665 done
+ tau kind        cell     Nstar       N50           flag  ratio    ok  definite_fail
+0.05 disp 1.0|A|45-59  60660.97  66935.17             ok   1.10  True          False
+0.05 disp 1.0|O|30-44   5724.84   8449.54             ok   1.48  True          False
+0.05 disp   2.0|A|<30  55713.61 107120.51             ok   1.92  True          False
+0.05 disp 2.0|B|30-44  22940.28  40649.54             ok   1.77  True          False
+0.05 disp 2.0|O|45-59   6573.19  32496.27             ok   4.94 False          False
+0.05 disp 2.0|W|30-44  58164.38  30207.21             ok   0.52  True          False
+0.05 disp 2.0|W|45-59  20564.82  30005.47             ok   1.46  True          False
+0.05  par   1.0|A|<30 117677.90       inf right-censored    inf False          False
+0.05  par 1.0|O|45-59  50090.61  92374.45             ok   1.84  True          False
+0.05  par   2.0|W|60+  89873.29  90067.42             ok   1.00  True          False
+0.02 disp 1.0|A|30-44  91043.73  79768.95             ok   0.88  True          False
+0.02 disp 1.0|A|45-59  13832.61  18414.61             ok   1.33  True          False
+0.02 disp   2.0|A|<30  16240.16  39190.73             ok   2.41 False          False
+0.02 disp 2.0|B|30-44  13700.26  28809.32             ok   2.10 False          False
+0.02 disp   2.0|B|<30 149810.02       inf right-censored    inf False          False
+0.02 disp 2.0|O|30-44  38598.11  51915.42             ok   1.35  True          False
+0.02 disp 2.0|W|30-44   9523.99   7786.27             ok   0.82  True          False
+0.02 disp 2.0|W|45-59   5921.35   7404.75             ok   1.25  True          False
+
+pass (within 2x), flag=ok only:
+            mean  size
+tau  kind            
+0.02 disp  0.71     7
+0.05 disp  0.86     7
+     par   1.00     2
+definite fails (right-censored, N* < pool/2): 0

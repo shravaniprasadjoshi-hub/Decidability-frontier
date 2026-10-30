@@ -1,0 +1,37 @@
+gamma=0.02 oracle delta=0.025 R=200 K=31 M_MIN=10
+N=5000 done
+N=10000 done
+N=20000 done
+N=35000 done
+N=50000 done
+N=75000 done
+N=100000 done
+N=150000 done
+N=195665 done
+ tau kind        cell     Nstar       N50           flag  ratio    ok
+0.05 disp 1.0|A|45-59 137341.28  75904.42             ok   0.55  True
+0.05 disp   1.0|W|60+   5614.56   6299.61             ok   1.12  True
+0.05 disp   2.0|A|<30  11804.96  15120.35             ok   1.28  True
+0.05 disp   2.0|O|60+  19278.54  37587.93             ok   1.95  True
+0.05 disp 2.0|W|30-44  24151.05  32890.00             ok   1.36  True
+0.05  par 1.0|A|30-44  98901.18 190774.62             ok   1.93  True
+0.05  par 1.0|O|30-44  78490.78  78393.96             ok   1.00  True
+0.05  par   1.0|O|<30 136595.98       inf right-censored    inf False
+0.05  par   2.0|W|<30  43003.08  59372.45             ok   1.38  True
+0.02 disp 1.0|A|45-59  24582.02  17411.01             ok   0.71  True
+0.02 disp   1.0|A|<30  59971.60  94123.29             ok   1.57  True
+0.02 disp   1.0|B|60+ 110284.76 172230.73             ok   1.56  True
+0.02 disp 1.0|O|45-59  91490.82 125070.19             ok   1.37  True
+0.02 disp 1.0|W|30-44 163910.34 156360.10             ok   0.95  True
+0.02 disp   2.0|A|<30   6347.26   8655.37             ok   1.36  True
+0.02 disp   2.0|B|60+  77043.74 142002.22             ok   1.84  True
+0.02 disp 2.0|O|30-44  41691.09  42912.46             ok   1.03  True
+0.02 disp   2.0|O|60+  11737.47  24463.79             ok   2.08 False
+0.02 disp 2.0|W|30-44   6545.35   7329.18             ok   1.12  True
+
+pass (within 2x), flag=ok only:
+            mean  size
+tau  kind            
+0.02 disp   0.9    10
+0.05 disp   1.0     5
+     par    1.0     3
