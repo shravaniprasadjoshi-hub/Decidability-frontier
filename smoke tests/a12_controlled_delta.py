@@ -11,7 +11,10 @@ import numpy as np
 import pandas as pd
 import subprocess, json, hashlib
 from common import build, J, M_MIN_DEFAULT, GRID
-from bounds import Cell, endpoints, breakdown
+
+from bounds import Cell, endpoints, breakdown, gap, bonferroni_z
+N_AUDIT = [5000, 20000]
+Z_ZS = {"unc": 1.645, "bon": bonferroni_z(0.05, 2 * (C_ - 1))} if (C_ := 32) else None  # placeholder, see below
 
 # CONFIG
 STATE, YEAR = os.environ.get("STATE", "CA"), "2018"
@@ -43,6 +46,23 @@ p, r, eps0 = S.p, S.r, S.eps0
 s5, key = S.s5, S.key
 select, grouped, amax = S.select, S.grouped, S.amax
 
+Z_ZS = {"unc": 1.645, "bon": bonferroni_z(0.05, 2 * len(others))}   # bon = Holm's first-step z (conservative)
+
+def frontier_cols(cg, cref, dlt, n_pool):
+    r = gap(cg, cref, dlt, 0.0, M_MIN)               # lo/hi include delta*S and u_g/u_ref; se_* at pool counts
+    out = dict(Dlo=r["lo"], Dhi=r["hi"], se_lo0=r["se_lo"], se_hi0=r["se_hi"],
+               tau_par_min0=max(r["hi"], -r["lo"]), tau_disp_max0=max(r["lo"], -r["hi"]))
+    for zn, z in Z_ZS.items():
+        for N in N_AUDIT:
+            f = np.sqrt(n_pool / N)                  # se(N) = se_pool * sqrt(n_pool/N), APPROXIMATE
+            out[f"tau_par_min_{zn}_{N}"]  = max(r["hi"] + z*r["se_hi"]*f, -r["lo"] + z*r["se_lo"]*f)
+            out[f"tau_disp_max_{zn}_{N}"] = max(r["lo"] - z*r["se_lo"]*f, -r["hi"] - z*r["se_hi"]*f)
+        for t in TAUS:                               # closed-form crossover N*, inf if slack <= 0
+            ns = lambda slack, se: n_pool * (z*se/slack)**2 if slack > 0 else np.inf
+            out[f"Nstar_disp_{zn}@{t}"] = min(ns(r["lo"] - t, r["se_lo"]), ns(-r["hi"] - t, r["se_hi"]))
+            out[f"Nstar_par_{zn}@{t}"]  = max(ns(t - r["hi"], r["se_hi"]), ns(t + r["lo"], r["se_lo"]))
+    return out
+
 # compute natural theta0 (since S.theta is already flipped)
 theta0 = np.array([Y0[codes == c].mean() for c in range(C)])
 
@@ -70,6 +90,7 @@ for g in GAMMAS:
         for t in TAUS:
             b = breakdown(cg, cref, t, 0.0, M_MIN); row[f"d*_disp@{t}"], row[f"d*_par@{t}"] = b["disparity"], b["parity"]
     
+        row.update(frontier_cols(cg, cref, dlt, n))
         R_.append(row)
     
     R = pd.DataFrame(R_); rows += R_
