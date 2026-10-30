@@ -9,31 +9,30 @@ N=100000 done
 N=150000 done
 N=195665 done
  tau kind        cell     Nstar       N50           flag  ratio    ok  definite_fail
-0.05 disp 1.0|A|45-59  65476.99  69122.83             ok   1.06  True          False
-0.05 disp 1.0|O|30-44   6107.49   8688.84             ok   1.42  True          False
-0.05 disp   2.0|A|<30  57524.27 108380.07             ok   1.88  True          False
-0.05 disp 2.0|B|30-44  22770.67  46219.47             ok   2.03 False          False
-0.05 disp 2.0|O|45-59   5732.24  30438.63             ok   5.31 False          False
-0.05 disp 2.0|W|30-44  21387.81  31470.55             ok   1.47  True          False
-0.05 disp 2.0|W|45-59  23184.29  29866.59             ok   1.29  True          False
-0.05  par   1.0|A|<30 127381.71       inf right-censored    inf False          False
-0.05  par 1.0|O|45-59  94827.96  95935.64             ok   1.01  True          False
-0.05  par   2.0|O|60+ 174537.76       inf right-censored    inf False          False
-0.05  par   2.0|W|60+  52383.01  87293.86             ok   1.67  True          False
-0.02 disp 1.0|A|30-44  66862.80  91087.12             ok   1.36  True          False
-0.02 disp 1.0|A|45-59  14939.49  17592.33             ok   1.18  True          False
-0.02 disp 1.0|B|30-44 124851.35 160943.38             ok   1.29  True          False
-0.02 disp 2.0|A|45-59 193636.53       inf right-censored    inf False          False
-0.02 disp   2.0|A|<30  16827.41  36724.31             ok   2.18 False          False
-0.02 disp 2.0|B|30-44  13298.23  29445.04             ok   2.21 False          False
-0.02 disp 2.0|O|30-44  47234.00  54510.55             ok   1.15  True          False
-0.02 disp 2.0|W|30-44   6199.74   7998.37             ok   1.29  True          False
-0.02 disp 2.0|W|45-59   6344.81   7635.95             ok   1.20  True          False
+0.05 disp 1.0|A|45-59 137341.28  74825.43             ok   0.54  True          False
+0.05 disp   1.0|W|60+   5614.56   6324.07             ok   1.13  True          False
+0.05 disp   2.0|A|<30  11804.96  15325.58             ok   1.30  True          False
+0.05 disp   2.0|O|60+  19278.54  36184.75             ok   1.88  True          False
+0.05 disp 2.0|W|30-44  24151.05  30787.32             ok   1.27  True          False
+0.05  par 1.0|A|30-44  98901.18 193144.71             ok   1.95  True          False
+0.05  par 1.0|O|30-44  78490.78  77697.07             ok   0.99  True          False
+0.05  par   1.0|O|<30 136595.98       inf right-censored    inf False          False
+0.05  par   2.0|W|<30  43003.08  64855.40             ok   1.51  True          False
+0.02 disp 1.0|A|45-59  24582.02  21307.03             ok   0.87  True          False
+0.02 disp   1.0|A|<30  59971.60  95891.42             ok   1.60  True          False
+0.02 disp   1.0|B|60+ 110284.76 159181.08             ok   1.44  True          False
+0.02 disp 1.0|O|45-59  91490.82 135865.24             ok   1.49  True          False
+0.02 disp 1.0|W|30-44 163910.34 131170.30             ok   0.80  True          False
+0.02 disp   2.0|A|<30   6347.26   9055.23             ok   1.43  True          False
+0.02 disp   2.0|B|60+  77043.74 138940.73             ok   1.80  True          False
+0.02 disp 2.0|O|30-44  41691.09  42452.84             ok   1.02  True          False
+0.02 disp   2.0|O|60+  11737.47  25966.24             ok   2.21 False          False
+0.02 disp 2.0|W|30-44   6545.35   7924.32             ok   1.21  True          False
 
 pass (within 2x), flag=ok only:
             mean  size
 tau  kind            
-0.02 disp  0.75     8
-0.05 disp  0.71     7
-     par   1.00     2
+0.02 disp   0.9    10
+0.05 disp   1.0     5
+     par    1.0     3
 definite fails (right-censored, N* < pool/2): 0
