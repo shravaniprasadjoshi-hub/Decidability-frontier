@@ -1,0 +1,42 @@
+# E2: multiplicity error control (Part 1, branch feature/multiplicity-error-control).
+# Base DGP/selection settings come from configs/primary.yaml (acked); nothing here changes them.
+# `_status` records what the team has / has not acked. Anything "proposed" must be acked before numbers freeze (Nov 6).
+
+state: CA
+year: "2018"
+
+# (seed, flip_seed) pairs: 3 seeds. NOTE primary.yaml proposes flip seeds 124/125 for seeds 1/2; the b8b runs used 123/456/789.
+seeds:
+  - [0, 123]
+  - [1, 456]
+  - [2, 789]
+
+gammas: [0.02, 0.03, 0.04, 0.05, 0.1]     # b8b list
+taus: [0.05, 0.02]
+alpha: 0.05
+N_list: [5000, 20000]
+reps: 1000                                 # audit reps per (seed, gamma, N); same sample reused across mults and arms (paired)
+mults: [0.5, 0.75, 1.0, 1.5]               # assumed delta = mult * oracle delta
+arms: [unc, bonf2K, bonfK, holm2K, shaffer]
+edge_rel_width: 0.1                        # edge cell: | |target Delta| - tau | <= 0.1 * tau  (the +-0.9 tau and +-1.1 tau grid points)
+ci_level: 0.95                             # Clopper-Pearson, two-sided
+
+# Pass rule and reporting (applied in scripts/report_e2.py, not here):
+#   mult >= 1 : corrected arms must show any-wrong CP upper <= alpha ("valid"); otherwise "not shown valid".
+#   mult <  1 : if any-wrong stays 0, report "no degradation found in this DGP" (never "robust").
+#   Shaffer is reported as an arm only. Switch rule (report, do not act): switch primary from holm2K to shaffer only if
+#   Shaffer any-wrong at mult >= 1 on EDGE cells has CP upper <= alpha.
+
+_status:
+  base_primary_yaml: acked
+  seeds_flip_pairs: proposed
+  gammas: proposed
+  taus: acked
+  alpha: acked
+  audit_sampling: acked        # iid with replacement from the pool, D redrawn each rep (as b8b/b8c/E3)
+  N_list: proposed
+  reps: proposed
+  mults: proposed
+  arms: proposed
+  shaffer_as_primary: not_acked   # O4: arm only
+  worst_case_confounding_planting: not_in_scope
