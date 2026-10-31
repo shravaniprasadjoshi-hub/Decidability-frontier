@@ -1,0 +1,38 @@
+gamma=0.02 oracle delta=0.025 R=1000 K=31 M_MIN=10
+N=5000 done
+N=10000 done
+N=20000 done
+N=35000 done
+N=50000 done
+N=75000 done
+N=100000 done
+N=150000 done
+N=195665 done
+ tau kind        cell     Nstar       N50           flag  ratio    ok  definite_fail
+0.05 disp 1.0|A|45-59 137341.28  74825.43             ok   0.54  True          False
+0.05 disp   1.0|W|60+   5614.56   6324.07             ok   1.13  True          False
+0.05 disp   2.0|A|<30  11804.96  15325.58             ok   1.30  True          False
+0.05 disp   2.0|O|60+  19278.54  36184.75             ok   1.88  True          False
+0.05 disp 2.0|W|30-44  24151.05  30787.32             ok   1.27  True          False
+0.05  par 1.0|A|30-44  98901.18 193144.71             ok   1.95  True          False
+0.05  par 1.0|O|30-44  78490.78  77697.07             ok   0.99  True          False
+0.05  par   1.0|O|<30 136595.98       inf right-censored    inf False          False
+0.05  par   2.0|W|<30  43003.08  64855.40             ok   1.51  True          False
+0.02 disp 1.0|A|45-59  24582.02  21307.03             ok   0.87  True          False
+0.02 disp   1.0|A|<30  59971.60  95891.42             ok   1.60  True          False
+0.02 disp   1.0|B|60+ 110284.76 159181.08             ok   1.44  True          False
+0.02 disp 1.0|O|45-59  91490.82 135865.24             ok   1.49  True          False
+0.02 disp 1.0|W|30-44 163910.34 131170.30             ok   0.80  True          False
+0.02 disp   2.0|A|<30   6347.26   9055.23             ok   1.43  True          False
+0.02 disp   2.0|B|60+  77043.74 138940.73             ok   1.80  True          False
+0.02 disp 2.0|O|30-44  41691.09  42452.84             ok   1.02  True          False
+0.02 disp   2.0|O|60+  11737.47  25966.24             ok   2.21 False          False
+0.02 disp 2.0|W|30-44   6545.35   7924.32             ok   1.21  True          False
+
+pass (within 2x), flag=ok only:
+            mean  size
+tau  kind            
+0.02 disp   0.9    10
+0.05 disp   1.0     5
+     par    1.0     3
+definite fails (right-censored, N* < pool/2): 0

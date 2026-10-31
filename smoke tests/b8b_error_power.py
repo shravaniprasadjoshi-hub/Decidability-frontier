@@ -3,7 +3,7 @@ B8b: audit-level error control + power on the controlled-Delta arm (A12 setup).
 
 usage from repo root:
     set PYTHONPATH=.;core
-    python "smoke tests/b8b_error_power.py"
+    python "smoke tests/results/b8b_error_power.py"
 
 Env: STATE (CA), SEED (0), FLIP_SEED (123), R (reps, 300), SYNTH=1
 """
@@ -111,7 +111,7 @@ for g in GAMMAS:
                         a["pp"].append((rej[K:] & pok).sum() / pok.sum() if pok.any() else np.nan)
 
         for tau in TAUS:
-            np.savez_compressed(f"smoke tests/zlog_{TAG}_g{g}_N{N}_tau{tau}.npz",
+            np.savez_compressed(f"smoke tests/results/zlog_{TAG}_g{g}_N{N}_tau{tau}.npz",
                                 z=np.array(zlog[(g, N, tau)]), K=K, Dt=Dt,
                                 cells=np.array([names[c] for c in others]), cfg=json.dumps(CFG), git=GIT)
             del zlog[(g, N, tau)]
@@ -130,5 +130,5 @@ for g in GAMMAS:
         print(f"\n--- gamma={g} N={N}\n" + T.round(3).to_string(index=False))
 
 df = pd.DataFrame(out); df["cfg_hash"], df["git"] = CFG_HASH, GIT
-df.to_csv(f"smoke tests/b8b_{TAG}.csv", index=False); print(f"saved b8b_{TAG}.csv")
-json.dump(CFG, open(f"smoke tests/b8b_{TAG}.json", "w"), indent=1)
+df.to_csv(f"smoke tests/results/b8b_{TAG}.csv", index=False); print(f"saved b8b_{TAG}.csv")
+json.dump(CFG, open(f"smoke tests/results/b8b_{TAG}.json", "w"), indent=1)
