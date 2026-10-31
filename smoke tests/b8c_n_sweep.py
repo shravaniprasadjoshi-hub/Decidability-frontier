@@ -48,7 +48,7 @@ for N in N_LIST:
             for p in ("unc", "holm"):
                 m = rej[(N, t, p)].mean(0); r[f"pow_disp_{p}"], r[f"pow_par_{p}"] = m[ci], m[K + ci]
             rows.append(r)
-P = pd.DataFrame(rows); P.to_csv(f"smoke tests/b8c_power_{STATE}_{SEED}_{FLIP_SEED}_g{G}.csv", index=False)
+P = pd.DataFrame(rows); P.to_csv(f"smoke tests/results/b8c_power_{STATE}_{SEED}_{FLIP_SEED}_g{G}.csv", index=False)
 
 # observed crossover (power >= 0.5, log-N interpolation) vs N*
 def cross(Ns, pw):
@@ -60,7 +60,7 @@ def cross(Ns, pw):
     j = j[0]; a, b = np.log(Ns[j-1]), np.log(Ns[j])
     return float(np.exp(a + (.5 - pw[j-1]) / (pw[j] - pw[j-1]) * (b - a))), "ok"
 
-A = pd.read_csv(f"smoke tests/a12_controlled_{STATE}_{SEED}_{FLIP_SEED}.csv"); A = A[np.isclose(A.gamma, G)]
+A = pd.read_csv(f"smoke tests/results/a12_controlled_{STATE}_{SEED}_{FLIP_SEED}.csv"); A = A[np.isclose(A.gamma, G)]
 out = []
 for t in TAUS:
     for kind, col in (("disp", "pow_disp_unc"), ("par", "pow_par_unc")):
@@ -79,4 +79,4 @@ if len(O):
     print("definite fails (right-censored, N* < pool/2):", int(O.definite_fail.sum()))
 
 O["git"] = GIT
-O.to_csv(f"smoke tests/b8c_crossover_{STATE}_{SEED}_{FLIP_SEED}_g{G}.csv", index=False)
+O.to_csv(f"smoke tests/results/b8c_crossover_{STATE}_{SEED}_{FLIP_SEED}_g{G}.csv", index=False)

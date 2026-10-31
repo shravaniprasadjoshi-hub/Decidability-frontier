@@ -2,7 +2,7 @@
 A12: controlled-Delta semi-synthetic arm (pool level, N = infinity, noise-free propensity). 
 Extends smoke test 3 and needs bounds.py and common.py to be in the same folder / PYTHONPATH.
 
-python "smoke tests/a12_controlled_delta.py"
+python "smoke tests/results/a12_controlled_delta.py"
 
 Env: STATE (CA), SEED (0), FLIP_SEED (123), SYNTH=1 (offline logic test only)
 """
@@ -139,6 +139,6 @@ for g in GAMMAS:
 
 df = pd.DataFrame(rows)
 df["cfg_hash"], df["git"] = CFG_HASH, GIT
-outfile = f"smoke tests/a12_controlled_{STATE}_{SEED}_{FLIP_SEED}.csv"
+outfile = f"smoke tests/results/a12_controlled_{STATE}_{SEED}_{FLIP_SEED}.csv"
 df.to_csv(outfile, index=False)
 print(f"\nsaved {outfile}")

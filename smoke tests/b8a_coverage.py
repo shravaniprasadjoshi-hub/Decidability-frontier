@@ -3,7 +3,7 @@ B8a: per-cell coverage of the identified-set ENDPOINTS, CLT margin (bounds.py) v
 
 usage from repo root:
     set PYTHONPATH=.;core
-    python "smoke tests/b8a_coverage.py"
+    python "smoke tests/results/b8a_coverage.py"
 
 Env: STATE (CA), SEED (0), R (reps, 1000), M_MIN (10), SYNTH=1 (offline logic test only)
 """
@@ -131,6 +131,6 @@ for g in GAMMAS:
 
 out = pd.concat(allrows).drop(columns=["ngbin", "nun2"], errors="ignore").groupby(["gamma", "N", "cell"]).mean(numeric_only=True)
 out["cfg_hash"], out["git"] = CFG_HASH, GIT
-outfile = f"smoke tests/b8a_coverage_{STATE}_{SEED}_m{M_MIN}_R{R}.csv"
+outfile = f"smoke tests/results/b8a_coverage_{STATE}_{SEED}_m{M_MIN}_R{R}.csv"
 out.to_csv(outfile)
 print(f"\nsaved {outfile} (per-cell means)")

@@ -3,8 +3,8 @@ b8c_trunc_diag.py:
 POST-HOC diagnostic, not pre-registered. Arms: orig N*, truncation-aware N* (trunc), and the same two on EXPECTED counts under the audit DGP (exp: na=A, ka=Ay, since b8c redraws D ~ Bern(prop) instead of using the pool's realized D). Does a truncation-aware N* explain the b8c crossover failures?
 Truncation-aware N*: scale the pool counts of (cell, ref) by N/n_pool, apply m_min=10 (expected-count truncation), and take the
 smallest N from which the certificate condition (z=1.645, assumed delta) holds for all larger N on a log grid.
-Reads smoke tests/b8c_crossover_{STATE}_{SEED}_{FLIP}_g{GAMMA}.csv (all that exist), writes smoke tests/b8c_trunc_diag_{STATE}.csv.
-Needs bounds.py, common.py. Env: STATE (CA).  Run: python "smoke tests/b8c_trunc_diag.py"
+Reads smoke tests/results/b8c_crossover_{STATE}_{SEED}_{FLIP}_g{GAMMA}.csv (all that exist), writes smoke tests/results/b8c_trunc_diag_{STATE}.csv.
+Needs bounds.py, common.py. Env: STATE (CA).  Run: python "smoke tests/results/b8c_trunc_diag.py"
 """
 import os, re, glob, numpy as np, pandas as pd
 pd.set_option("display.max_columns", 30)
@@ -17,7 +17,7 @@ NGRID = np.geomspace(2000, 400000, 150)
 built = {}
 out = []
 
-for f in sorted(glob.glob(f"smoke tests/b8c_crossover_{STATE}_*_g*.csv")):
+for f in sorted(glob.glob(f"smoke tests/results/b8c_crossover_{STATE}_*_g*.csv")):
     m = re.search(rf"b8c_crossover_{STATE}_(\d+)_(\d+)_g(\d\.\d+)\.csv$", f.replace("\\", "/"))
     if not m: continue
     seed, flip, G = int(m[1]), int(m[2]), float(m[3])
@@ -57,7 +57,7 @@ T = pd.DataFrame(out)
 T["ratio"] = T.N50 / T.Nstar; T["ratio_trunc"] = T.N50 / T.Nstar_trunc; T["ratio_exp"] = T.N50 / T.Nstar_exp; T["ratio_trunc_exp"] = T.N50 / T.Nstar_trunc_exp
 T["ok"] = (T.flag == "ok") & T.ratio.between(0.5, 2); T["ok_trunc"] = (T.flag == "ok") & T.ratio_trunc.between(0.5, 2)
 T["ok_exp"] = (T.flag == "ok") & T.ratio_exp.between(0.5, 2); T["ok_trunc_exp"] = (T.flag == "ok") & T.ratio_trunc_exp.between(0.5, 2)
-T.to_csv(f"smoke tests/b8c_trunc_diag_{STATE}.csv", index=False)
+T.to_csv(f"smoke tests/results/b8c_trunc_diag_{STATE}.csv", index=False)
 pd.set_option("display.width", 200)
 print(f"\nrebuild check (closed form vs CSV Nstar): max rel err {T.rebuild_relerr[np.isfinite(T.rebuild_relerr)].max():.2e}  (should be ~0; else counts differ from the a12 run)")
 o = T[T.flag == "ok"]

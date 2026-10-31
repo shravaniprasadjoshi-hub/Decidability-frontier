@@ -1,6 +1,18 @@
 __pycache__
 data/
-# regenerable
-*.csv
-*.json
-*.npz
+*.pyc
+smoke tests/data/
+# tracked results
+!smoke tests/a12_controlled_CA_0_123.csv
+!smoke tests/a12_controlled_CA_1_456.csv
+!smoke tests/a12_controlled_CA_2_789.csv
+!smoke tests/a12_controlled_CA_3_321.csv
+!smoke tests/b8c_crossover_CA_*.csv
+!smoke tests/b8c_trunc_diag_CA.csv
+!smoke tests/b8b_CA_*_*.csv
+!smoke tests/b8b_CA_*_*.json
+!smoke tests/*.txt
+smoke tests/figs/*
+!smoke tests/figs/e3_*.png
+!smoke tests/figs/e3_holm_power_exp.csv
+!smoke tests/figs/e3_summary.csv
