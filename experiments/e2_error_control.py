@@ -9,10 +9,11 @@ and apply every arm to the same p-values (paired): unc, bonf2K (alpha/2K), bonfK
 Records any-wrong, any-wrong on EDGE cells (| |target| - tau | <= edge_rel_width * tau), counts, and power against the noise-free
 population-limit flags at the assumed delta.  Clopper-Pearson CIs are on any-wrong counts.
 
-Outputs (results/):  e2_summary.csv  e2_paired.csv  e2_pool.csv  e2_meta.json   (each CSV carries cfg_hash and git)
+Outputs (results/):  e2_summary.csv  e2_paired.csv  e2_pool.csv  e2_events.csv  e2_meta.json   (each CSV carries cfg_hash and git)
   e2_summary : one row per (seed, flip_seed, gamma, N, mult, tau, arm)
   e2_paired  : Shaffer minus Holm, per (seed, gamma, N, mult, tau), paired by rep
-  e2_pool    : per (seed, gamma, mult, tau) population-limit diagnostics (is a wrong certificate possible even as N -> infinity?)
+  e2_pool    : per (seed, gamma, mult, tau) population-limit diagnostics from EXPECTED counts (is a wrong certificate possible even as N -> infinity?)
+  e2_events  : one row per wrong certificate of a corrected arm (cell, N, tau, mult, rep, edge, pop_wrong, p-value)
 Independent of core/frontier.py and core/provenance.py (inline hashes), so it does not depend on the E3/E4 branch.
 """
 import argparse, hashlib, json, os, subprocess, sys, time
@@ -82,22 +83,25 @@ def run_seed(cfg, seed, flip, alpha_arms, quick_t=None):
     S = build(state=state, seed=seed, flip_seed=flip)
     C, ref, others, key, Y, n, target, Dtrue = S.C, S.ref, S.others, S.key, S.Y, S.n, S.target, S.Dtrue
     K = len(others); Dt = Dtrue[others]
-    summ, pair, pool = [], [], []
+    summ, pair, pool, events = [], [], [], []
     print(f"seed={seed} flip={flip} n={n} K={K} ref='{S.names[ref]}'", flush=True)
     for g in cfg["gammas"]:
         D0, prop = S.select(g, S.eps0); gr = S.grouped(key, C * J, D0, prop)
         dlt = S.amax(S.dgap(gr)[1])
-        cl = lambda c: Cell(gr["n"].reshape(C, J)[c], gr["na"].reshape(C, J)[c], gr["ka"].reshape(C, J)[c])
+        # population-limit flags use EXPECTED counts (propensity), because audit samples redraw D each rep (not the one realized D0 draw)
+        cl = lambda c: Cell(gr["n"].reshape(C, J)[c], gr["A"].reshape(C, J)[c], gr["Ay"].reshape(C, J)[c])
         dstar = {t: (np.array([breakdown(cl(c), cl(ref), t, 0.0, m_min)["disparity"] for c in others]),
                      np.array([breakdown(cl(c), cl(ref), t, 0.0, m_min)["parity"] for c in others])) for t in taus}
         edge = {t: np.abs(np.abs(target[others]) - t) <= cfg["edge_rel_width"] * t for t in taus}
         wrong = {t: np.concatenate([np.abs(Dt) <= t, np.abs(Dt) > t]) for t in taus}
         edge2 = {t: np.concatenate([edge[t], edge[t]]) for t in taus}
+        pwmap = {}
         for mult in mults:
             d = mult * dlt
             for t in taus:
                 dok, pok = dstar[t][0] > d, dstar[t][1] > d
                 pw = np.concatenate([(np.abs(Dt) <= t) & dok, (np.abs(Dt) > t) & pok])    # wrong cert even at N -> inf
+                pwmap[(mult, t)] = pw
                 pool.append(dict(seed=seed, flip_seed=flip, gamma=g, mult=mult, tau=t, delta=dlt, K=K, n_edge=int(edge[t].sum()),
                                  n_dok=int(dok.sum()), n_pok=int(pok.sum()), n_pop_wrong=int(pw.sum()), n_pop_wrong_edge=int((pw & edge2[t]).sum())))
         for N in N_list:
@@ -116,6 +120,12 @@ def run_seed(cfg, seed, flip, alpha_arms, quick_t=None):
                         pv = family_p(st, t, K) if st is not None else np.ones(2 * K)
                         for arm, rej in apply_arms(pv, alpha, K, arms).items():
                             w = rej & wrong[t]
+                            if arm != "unc" and w.any():                      # every wrong certificate of a corrected arm is logged
+                                for i in np.flatnonzero(w):
+                                    c_ = others[i % K]
+                                    events.append(dict(seed=seed, flip_seed=flip, gamma=g, N=N, mult=mult, tau=t, arm=arm, rep=rep, test="disp" if i < K else "par",
+                                                       cell=int(c_), cell_name=S.names[c_], Dtrue=float(Dt[i % K]), edge=bool(edge2[t][i]),
+                                                       pop_wrong=bool(pwmap[(mult, t)][i]), p=float(pv[i])))
                             a = acc.setdefault((mult, t, arm), {k_: [] for k_ in ("any", "edge", "nw", "pd", "pp", "nd", "np")})
                             a["any"].append(bool(w.any())); a["edge"].append(bool((w & edge2[t]).any())); a["nw"].append(int(w.sum()))
                             a["pd"].append((rej[:K] & dok).sum() / dok.sum() if dok.any() else np.nan)
@@ -144,7 +154,7 @@ def run_seed(cfg, seed, flip, alpha_arms, quick_t=None):
                                          share_shaffer_fewer=float(np.mean(tot_s < tot_h)),
                                          d_any_wrong=float(np.mean(s_["any"]) - np.mean(h_["any"]))))
             print(f"  gamma={g} N={N}: {time.time() - t0:.1f}s", flush=True)
-    return summ, pair, pool
+    return summ, pair, pool, events
 
 
 def main():
@@ -166,19 +176,19 @@ def main():
     print(f"git={git} cfg={cfg_hash}  seeds={cfg['seeds']} R={cfg['reps']}" + ("  [QUICK: not for results]" if a.quick else ""), flush=True)
     if "+dirty" in git and not a.quick:
         print("WARNING: working tree is dirty; commit (and keep results/ ignored) before the run you report.", flush=True)
-    S_, P_, L_, qt = [], [], [], []
+    S_, P_, L_, EV, qt = [], [], [], [], []
     t0 = time.time()
     for seed, flip in cfg["seeds"]:
-        s, p, l = run_seed(cfg, int(seed), int(flip), None, quick_t=qt if a.quick else None)
-        S_ += s; P_ += p; L_ += l
-        for name, rows in (("summary", S_), ("paired", P_), ("pool", L_)):                       # flush after each seed
+        s, p, l, ev = run_seed(cfg, int(seed), int(flip), None, quick_t=qt if a.quick else None)
+        S_ += s; P_ += p; L_ += l; EV += ev
+        for name, rows in (("summary", S_), ("paired", P_), ("pool", L_), ("events", EV)):                       # flush after each seed
             df = pd.DataFrame(rows); df["cfg_hash"], df["git"] = cfg_hash, git
             df.to_csv(os.path.join(a.results, f"e2_{name}.csv"), index=False)
     meta = dict(cfg=cfgfull, cfg_hash=cfg_hash, git=git, quick=a.quick, seconds=time.time() - t0, seeds=cfg["seeds"], R=cfg["reps"])
     json.dump(meta, open(os.path.join(a.results, "e2_meta.json"), "w"), indent=1)
     if a.quick:
         per_rep = float(np.mean(qt)); f = full
-        total = per_rep * f["reps"] * len(f["gammas"]) * len(f["N_list"]) * len(f["seeds"]) * (1.0 + 3.0 * 0)  # N-scaling is mild; this is per-rep at N=5000
+        total = per_rep * f["reps"] * len(f["gammas"]) * len(f["N_list"]) * len(f["seeds"])  # per-rep time at N=5000
         print(f"\ntiming: {per_rep * 1000:.0f} ms per rep (all mults x taus x arms) -> full run ~ {total / 60:.0f} min (N=20000 is a bit slower)")
     print(f"done in {time.time() - t0:.0f}s -> {a.results}/e2_*.csv")
 
