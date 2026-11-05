@@ -69,6 +69,11 @@ def main():
     pg["rate"] = (pg.k / pg.reps).round(5); print(pg.pivot_table(index=["arm", "mult>=1"], columns="gamma", values="rate").to_string())
     print("\n== any-wrong, all gamma > 0 pooled (includes gamma = 0.1, where almost nothing is certifiable; optimistic) ==\n" + f(tab_all).to_string(index=False))
     print("\n== any-wrong, EDGE cells only (planted at +-0.9 tau and +-1.1 tau) ==\n" + f(etab).to_string(index=False))
+    z0e = s[(s.gamma == 0) & (s.mult == 1.0) & (s.n_edge > 0)]
+    if len(z0e):
+        e0 = pool(z0e, "k_edge", by, a.alpha, a.level)
+        print("\n== gamma = 0, EDGE cells only (no identification slack; mult = 1) ==\n" + f(e0).to_string(index=False))
+    print(f"\nedge cells per tau (should be 8: four planted values x ~2 cells): {sorted(s.n_edge.unique())}")
 
     ev_path = os.path.join(a.results, "e2_events.csv")
     ev = pd.read_csv(ev_path) if os.path.exists(ev_path) else pd.DataFrame()

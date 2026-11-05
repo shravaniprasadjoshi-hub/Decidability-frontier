@@ -92,7 +92,7 @@ def run_seed(cfg, seed, flip, alpha_arms, quick_t=None):
         cl = lambda c: Cell(gr["n"].reshape(C, J)[c], gr["A"].reshape(C, J)[c], gr["Ay"].reshape(C, J)[c])
         dstar = {t: (np.array([breakdown(cl(c), cl(ref), t, 0.0, m_min)["disparity"] for c in others]),
                      np.array([breakdown(cl(c), cl(ref), t, 0.0, m_min)["parity"] for c in others])) for t in taus}
-        edge = {t: np.abs(np.abs(target[others]) - t) <= cfg["edge_rel_width"] * t for t in taus}
+        edge = {t: np.abs(np.abs(target[others]) - t) <= cfg["edge_rel_width"] * t + 1e-9 for t in taus}   # +1e-9: the +-0.9 tau grid points sit exactly on the 0.1 tau boundary in floating point
         wrong = {t: np.concatenate([np.abs(Dt) <= t, np.abs(Dt) > t]) for t in taus}
         edge2 = {t: np.concatenate([edge[t], edge[t]]) for t in taus}
         pwmap = {}
