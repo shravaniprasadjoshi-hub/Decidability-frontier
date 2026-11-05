@@ -25,7 +25,8 @@ def main():
     ap.add_argument("--alpha", type=float, default=0.05)
     a = ap.parse_args()
     res = Path(a.results); out = res / "figures"; out.mkdir(parents=True, exist_ok=True)
-    s = pd.read_csv(res / "e2_summary.csv")
+    s_raw = pd.read_csv(res / "e2_summary.csv"); s_full = s_raw[s_raw.gamma > 0]            # gamma = 0 (no-slack check) gets its own figure below
+    s = s_full[s_full.gamma <= 0.05]                                                          # figure 1 pools 0 < gamma <= 0.05 (gamma = 0.1 certifies ~nothing)
     Ns, taus, mults = sorted(s.N.unique()), sorted(s.tau.unique(), reverse=True), sorted(s.mult.unique())
     floor = 3e-5
 
@@ -48,9 +49,10 @@ def main():
             if i == len(taus) - 1: ax.set_xlabel("assumed delta / oracle delta")
     axs[0, 0].text(0.52, a.alpha * 1.15, f"alpha = {a.alpha}", fontsize=8)
     h, l = axs[0, 0].get_legend_handles_labels(); fig.legend(h, l, loc="lower center", ncol=4, fontsize=9, frameon=False)
-    fig.suptitle("E2: family-level error, pooled over seeds and gamma (Clopper-Pearson 95%); points at the floor = zero wrong certificates", fontsize=10)
+    fig.suptitle("E2: family-level error, pooled over seeds and 0 < gamma <= 0.05 (Clopper-Pearson 95%); points at the floor = zero wrong certificates", fontsize=10)
     fig.tight_layout(rect=(0, 0.04, 1, 0.95)); fig.savefig(out / "e2_anywrong_vs_mult.png", dpi=200); plt.close(fig)
 
+    s = s_full
     gam = sorted(s.gamma.unique())
     fig, axs = plt.subplots(1, len(Ns), figsize=(5.4 * len(Ns), 3.9), sharey=True, squeeze=False)
     for j, N in enumerate(Ns):
@@ -63,6 +65,22 @@ def main():
     axs[0, -1].legend(fontsize=8, frameon=False)
     fig.suptitle("Power is small: correction costs little only because little is certifiable at these N", fontsize=10)
     fig.tight_layout(rect=(0, 0, 1, 0.94)); fig.savefig(out / "e2_power_by_gamma.png", dpi=200); plt.close(fig)
+    z = s_raw[(s_raw.gamma == 0) & (s_raw.mult == 1.0)]                 # no confounding: oracle delta ~ 0, so every mult is the same test
+    if len(z):
+        fig, axs = plt.subplots(1, len(taus), figsize=(5.2 * len(taus), 3.9), sharey=True, squeeze=False)
+        for j, t_ in enumerate(taus):
+            ax = axs[0, j]; w = 0.2
+            for q, arm in enumerate(ARMS):
+                for i, N in enumerate(Ns):
+                    g = z[(z.N == N) & (z.tau == t_) & (z.arm == arm)]
+                    k, n = int(g.k_any.sum()), int(g.R.sum()); l, h = clopper_pearson(k, n); x = i + (q - 1.5) * w
+                    ax.bar(x, k / n, w, color=COL[arm], label=arm if i == 0 else None)
+                    ax.errorbar(x, k / n, yerr=[[k / n - l], [h - k / n]], color="k", lw=1, capsize=2)
+            ax.axhline(a.alpha, color="k", ls="--", lw=1); ax.set_xticks(range(len(Ns)), [f"N = {N:,}" for N in Ns]); ax.set_title(f"tau = {t_}", fontsize=10)
+            if j == 0: ax.set_ylabel("P(any wrong certificate)")
+        axs[0, -1].legend(fontsize=8, frameon=False, loc="upper left")
+        fig.suptitle("gamma = 0 (no confounding, no identification slack; Clopper-Pearson 95%): uncorrected vs corrected arms", fontsize=9)
+        fig.tight_layout(rect=(0, 0, 1, 0.93)); fig.savefig(out / "e2_gamma0.png", dpi=200); plt.close(fig)
     print(f"figures saved to {out}")
 
 
