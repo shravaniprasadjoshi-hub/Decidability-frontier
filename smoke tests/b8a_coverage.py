@@ -7,9 +7,9 @@ usage from repo root:
 
 Env: STATE (CA), SEED (0), R (reps, 1000), M_MIN (10), SYNTH=1 (offline logic test only)
 
-Outputs (smoke tests/):
-    b8a_coverage_{STATE}_{SEED}_m{M_MIN}_R{R}.csv   per-cell means over reps (legacy)
-    b8a_pooled_{STATE}_{SEED}_m{M_MIN}_R{R}.csv     per-rep pooled coverage by n_g bin and nun bin, with rep-clustered MC-se (used by plot_e1.py)
+Outputs (smoke tests/results/):
+    b8a_pooled_{STATE}_{SEED}_m{M_MIN}_R{R}.csv     per-rep pooled coverage by n_g bin and nun bin, with rep-clustered MC-se (used by plot_e1.py; committed)
+    b8a_coverage_{STATE}_{SEED}_m{M_MIN}_R{R}.csv   per-cell means over reps (legacy; gitignored)
 """
 import os, numpy as np, pandas as pd
 from scipy.stats import beta
@@ -149,12 +149,13 @@ for by in ("ng_bin", "nun_bin"):
                 p_ = s.sum() / m.sum(); se = np.sqrt(((s - p_ * m) ** 2).sum()) / m.sum()   # rep-clustered MC-se
                 prow.append(dict(gamma=g_, N=N_, group=by, level=lvl, arm=arm, endpoint=ep, cov=p_, mc_se=se,
                                  cell_reps=int(m.sum()), n_cells=d.c.nunique(), passes=bool(p_ >= 0.94)))
-pooled_file = f"smoke tests/b8a_pooled_{STATE}_{SEED}_m{M_MIN}_R{R}.csv"
+os.makedirs("smoke tests/results", exist_ok=True)
+pooled_file = f"smoke tests/results/b8a_pooled_{STATE}_{SEED}_m{M_MIN}_R{R}.csv"
 pd.DataFrame(prow).to_csv(pooled_file, index=False)
 print(f"\nsaved {pooled_file} (per-rep pooled)")
 
 out = pd.concat(allrows).drop(columns=["ngbin", "nun2", "rep"], errors="ignore").groupby(["gamma", "N", "cell"]).mean(numeric_only=True)
 out["cfg_hash"], out["git"] = CFG_HASH, GIT
-outfile = f"smoke tests/b8a_coverage_{STATE}_{SEED}_m{M_MIN}_R{R}.csv"
+outfile = f"smoke tests/results/b8a_coverage_{STATE}_{SEED}_m{M_MIN}_R{R}.csv"   # legacy per-cell means, gitignored
 out.to_csv(outfile)
 print(f"\nsaved {outfile} (per-cell means)")

@@ -18,19 +18,26 @@ PASS = 0.94
 
 ap = argparse.ArgumentParser()
 ap.add_argument("state"); ap.add_argument("seed", type=int); ap.add_argument("m_min", type=int)
-ap.add_argument("--data-dir", default=HERE); ap.add_argument("--out", default=None)
-a = ap.parse_args(); out = a.out or os.path.join(a.data_dir, "results")
+ap.add_argument("--data-dir", default=os.path.join(HERE, "results")); ap.add_argument("--out", default=None)
+a = ap.parse_args(); out = a.out or a.data_dir
 pat = os.path.join(a.data_dir, f"b8a_pooled_{a.state}_{a.seed}_m{a.m_min}_R*.csv")
 files = glob.glob(pat); assert files, f"no file matches {pat}"
 tab = pd.read_csv(files[0], dtype={"level": str}); os.makedirs(out, exist_ok=True)
 tag = f"e1_{a.state}_s{a.seed}_m{a.m_min}"
-tab.to_csv(os.path.join(out, f"{tag}_table.csv"), index=False)
 
 # pass check: proposed arm (clt_comp), clean bin (nun=0), both endpoints, every N and gamma
 pc = tab[(tab.arm == "clt_comp") & (tab.group == "nun_bin") & (tab.level == "0")]
 pc = pc.assign(informative=pc.cell_reps >= 500)   # <500 clean cell-reps: MC-se too large, pass/fail is not evidence
 pc.to_csv(os.path.join(out, f"{tag}_passcheck.csv"), index=False)
 print(pc[["N", "gamma", "endpoint", "cov", "mc_se", "cell_reps", "passes", "informative"]].round(4).to_string(index=False))
+
+# thin bins at N=20000: n_g 0-50, 50-100, and nun=1 (where undercoverage showed up); informative=False rows are NOT evidence
+th = tab[(tab.N == 20000) & tab.arm.isin(["clt_comp", "clt_nocomp"]) &
+         (((tab.group == "ng_bin") & tab.level.isin(["[0.0, 50.0)", "[50.0, 100.0)"])) | ((tab.group == "nun_bin") & (tab.level == "1")))]
+th = th.assign(informative=th.cell_reps >= 500)
+th.to_csv(os.path.join(out, f"{tag}_thinbins.csv"), index=False)
+print(th.pivot_table(index=["gamma", "group", "level", "endpoint"], columns="arm", values="cov").round(3).to_string())
+print("rows with informative=False (cell_reps<500):", int((~th.informative).sum()))
 
 def panel(ax, t, labs, show, xlabel):
     x = np.arange(len(labs)); wd = 0.8 / len(ARMS)
