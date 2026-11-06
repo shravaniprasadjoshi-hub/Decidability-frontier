@@ -6,28 +6,24 @@ usage from repo root:
     python "smoke tests/b8b_error_power.py"
 
 Env: STATE (CA), SEED (0), FLIP_SEED (123), R (reps, 300), SYNTH=1
+
+NOTE: dok/pok and n_disp_ok/n_par_ok use d* from the pool's REALIZED draw. E3 Fig 3 (plot_e3.py) recomputes power from the zlogs with
+EXPECTED-count d* (d*_exp > delta), so b8b CSV powers are not directly comparable with that figure.
 """
 import os, numpy as np, pandas as pd
 from scipy.special import ndtr
 from scipy.stats import beta
 from bounds import Cell, endpoints, breakdown
 from multiplicity import holm, holm_shaffer
-from common import build, J, M_MIN_DEFAULT, GRID
-import subprocess, json, hashlib
+from common import build, J, M_MIN_DEFAULT, GRID, git_state as _git
+import json, hashlib
 
 # CONFIG 
+os.makedirs("smoke tests/results", exist_ok=True)
 STATE, YEAR = os.environ.get("STATE", "CA"), "2018"
 SEED, FLIP_SEED = int(os.environ.get("SEED", 0)), int(os.environ.get("FLIP_SEED", 123))
 GAMMAS, TAUS, M_MIN, MIN_PER_SIDE = [0.02, 0.03, 0.04, 0.05, 0.1], [0.05, 0.02], M_MIN_DEFAULT, 30
 ALPHA, R, N_LIST, MULTS = 0.05, int(os.environ.get("R", 300)), [5000, 20000], [1.0, 0.5]
-
-def _git():
-    try:
-        h = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-        dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip())
-        return h[:10] + ("+dirty" if dirty else "")
-    except Exception:
-        return "nogit"
 
 CFG = dict(script="b8b", state=STATE, year=YEAR, seed=SEED, flip_seed=FLIP_SEED, R=R, gammas=GAMMAS, taus=TAUS,
            m_min=M_MIN, grid=GRID.tolist(), J=J, alpha=ALPHA, N_list=N_LIST, mults=MULTS)
@@ -111,7 +107,7 @@ for g in GAMMAS:
                         a["pp"].append((rej[K:] & pok).sum() / pok.sum() if pok.any() else np.nan)
 
         for tau in TAUS:
-            np.savez_compressed(f"smoke tests/zlog_{TAG}_g{g}_N{N}_tau{tau}.npz",
+            np.savez_compressed(f"smoke tests/results/zlog_{TAG}_g{g}_N{N}_tau{tau}.npz",
                                 z=np.array(zlog[(g, N, tau)]), K=K, Dt=Dt,
                                 cells=np.array([names[c] for c in others]), cfg=json.dumps(CFG), git=GIT)
             del zlog[(g, N, tau)]
@@ -130,5 +126,5 @@ for g in GAMMAS:
         print(f"\n--- gamma={g} N={N}\n" + T.round(3).to_string(index=False))
 
 df = pd.DataFrame(out); df["cfg_hash"], df["git"] = CFG_HASH, GIT
-df.to_csv(f"smoke tests/b8b_{TAG}.csv", index=False); print(f"saved b8b_{TAG}.csv")
-json.dump(CFG, open(f"smoke tests/b8b_{TAG}.json", "w"), indent=1)
+df.to_csv(f"smoke tests/results/b8b_{TAG}.csv", index=False); print(f"saved b8b_{TAG}.csv")
+json.dump(CFG, open(f"smoke tests/results/b8b_{TAG}.json", "w"), indent=1)
