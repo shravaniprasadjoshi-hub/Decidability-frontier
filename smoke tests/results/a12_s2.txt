@@ -1,4 +1,4 @@
-git=82d98d4301+dirty cfg=b39b5dd1
+git=f4818b3136 cfg=b39b5dd1
 STATE=CA SEED=2 FLIP_SEED=789 n=195665 base rate 0.411 -> 0.624; ref='1.0|W|45-59' (n=19896), K=31
 target vs realized Delta_true: max|diff|=0.0008 (clipping only); natural Delta median |.|=0.250 -> controlled 0.045
 cells with |Delta_true|<=tau: tau=0.05: 16/31, tau=0.02: 8/31
@@ -28,4 +28,4 @@ cells with |Delta_true|<=tau: tau=0.05: 16/31, tau=0.02: 8/31
   tau=0.05: |Dc|<tau 16/31 | parity feasible at delta=0 16 | parity certifiable at delta=0.121: 0 (exp: 0) | disparity certifiable: 2 (exp: 2) | d*_disp in [0.02,0.10]: 9 | d*_par in [0.005,0.10]: 14
   tau=0.02: |Dc|<tau 8/31 | parity feasible at delta=0 8 | parity certifiable at delta=0.121: 0 (exp: 0) | disparity certifiable: 2 (exp: 2) | d*_disp in [0.02,0.10]: 13 | d*_par in [0.005,0.10]: 7
 
-saved smoke tests/a12_controlled_CA_2_789.csv
+saved smoke tests/results/a12_controlled_CA_2_789.csv
