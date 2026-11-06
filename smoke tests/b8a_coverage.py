@@ -3,15 +3,15 @@ B8a: per-cell coverage of the identified-set ENDPOINTS, CLT margin (bounds.py) v
 
 usage from repo root:
     set PYTHONPATH=.;core
-    python "smoke tests/results/b8a_coverage.py"
+    python "smoke tests/b8a_coverage.py"
 
 Env: STATE (CA), SEED (0), R (reps, 1000), M_MIN (10), SYNTH=1 (offline logic test only)
 """
 import os, numpy as np, pandas as pd
 from scipy.stats import beta
 from bounds import Cell, endpoints
-from common import build, J, M_MIN_DEFAULT, GRID
-import subprocess, json, hashlib
+from common import build, J, M_MIN_DEFAULT, GRID, git_state as _git
+import json, hashlib
 
 # CONFIG 
 STATE, YEAR = os.environ.get("STATE", "CA"), "2018"
@@ -21,14 +21,6 @@ GAMMAS, N_LIST = [0.02, 0.05, 0.1], [5000, 20000]
 MIN_PER_SIDE = 30
 Z, ALPHA, TAU = 1.645, 0.05, 0.05 # one-sided per endpoint, single-test z (NOT multiplicity-adjusted)
 NBINS = [0, 50, 100, 200, 500, 10**9]
-
-def _git():
-    try:
-        h = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-        dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip())
-        return h[:10] + ("+dirty" if dirty else "")
-    except Exception:
-        return "nogit"
 
 CFG = dict(script="b8a", state=STATE, year=YEAR, seed=SEED, R=R, gammas=GAMMAS, N_list=N_LIST,
            m_min=M_MIN, grid=GRID.tolist(), J=J, alpha=ALPHA, tau=TAU)
@@ -131,6 +123,7 @@ for g in GAMMAS:
 
 out = pd.concat(allrows).drop(columns=["ngbin", "nun2"], errors="ignore").groupby(["gamma", "N", "cell"]).mean(numeric_only=True)
 out["cfg_hash"], out["git"] = CFG_HASH, GIT
+os.makedirs("smoke tests/results", exist_ok=True)
 outfile = f"smoke tests/results/b8a_coverage_{STATE}_{SEED}_m{M_MIN}_R{R}.csv"
 out.to_csv(outfile)
 print(f"\nsaved {outfile} (per-cell means)")

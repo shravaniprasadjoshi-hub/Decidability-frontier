@@ -3,25 +3,22 @@ B8c: N sweep, observed per-cell crossover vs closed-form N*.
 Needs bounds.py, common.py, multiplicity.py and the a12 CSV for the SAME (STATE, SEED, FLIP_SEED, GAMMA, M_MIN).
 Env: STATE (CA), SEED (0), FLIP_SEED (123), GAMMA (0.02), R (200)
 Run: python "smoke tests/b8c_n_sweep.py"
+
+Cell selection and pass rule use the CORRECTED N* (a12 column Nstar_trunc_exp_{kind}@tau: truncation-aware, expected counts, z=1.645 only).
+The ORIGINAL closed-form N* (a12 column Nstar_{kind}_unc@tau) is written to the output as `Nstar`, so b8c_trunc_diag.py can still
+compare the original rule against the corrections. Only cells with corrected N* in [N_LIST[0], N_LIST[-1]] are tested.
+N* = 'last failing N on the grid + 1'; the observed crossover = 'first N with power >= 0.5'. They differ if the verdict is non-monotone in N (m_min truncation).
 """
 import os, numpy as np, pandas as pd
-import subprocess, json, hashlib
 from bounds import Cell, endpoints
 from multiplicity import holm, cell_pvalues, family_pvalues
-from common import build, J, M_MIN_DEFAULT
+from common import build, J, M_MIN_DEFAULT, git_state as _git
 
 STATE, SEED, FLIP_SEED = os.environ.get("STATE", "CA"), int(os.environ.get("SEED", 0)), int(os.environ.get("FLIP_SEED", 123))
 G, R, M_MIN, ALPHA = float(os.environ.get("GAMMA", 0.02)), int(os.environ.get("R", 200)), M_MIN_DEFAULT, 0.05
 TAUS = [0.05, 0.02]
 N_LIST = [5000, 10000, 20000, 35000, 50000, 75000, 100000, 150000, 195665]
 
-def _git():
-    try:
-        h = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-        dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip())
-        return h[:10] + ("+dirty" if dirty else "")
-    except Exception:
-        return "nogit"
 GIT = _git()
 print(f"git={GIT}")
 
@@ -46,6 +43,8 @@ for N in N_LIST:
             pv = family_pvalues(*cell_pvalues(dlo, dhi, slo, shi, t))
             rej[(N, t, "unc")][i] = pv <= ALPHA; rej[(N, t, "holm")][i] = holm(pv, ALPHA)
     print(f"N={N} done")
+
+os.makedirs("smoke tests/results", exist_ok=True)
 
 # per-cell power table
 rows = []
@@ -73,19 +72,20 @@ out = []
 for t in TAUS:
     for kind, col in (("disp", "pow_disp_unc"), ("par", "pow_par_unc")):
         for _, a in A.iterrows():
-            Nstar = a[f"Nstar_trunc_exp_{kind}@{t}"]
-            if not (N_LIST[0] <= Nstar <= N_LIST[-1]): continue
+            Nte = a[f"Nstar_trunc_exp_{kind}@{t}"]            # corrected N*: selection + pass rule
+            if not (N_LIST[0] <= Nte <= N_LIST[-1]): continue
+            Nor = a[f"Nstar_{kind}_unc@{t}"]                  # original closed-form N* (b8c_trunc_diag reads this as Nstar)
             sub = P[(P.tau == t) & (P.cell == a.cell)].sort_values("N")
             n50, flag = cross(sub.N.values, sub[col].values)
-            out.append(dict(tau=t, kind=kind, cell=a.cell, Nstar=Nstar, N50=n50, flag=flag, ratio=n50 / Nstar,
-                            ok=(flag == "ok") and (0.5 <= n50 / Nstar <= 2),
-                            definite_fail=(flag == "right-censored") and Nstar < N_LIST[-1] / 2))
+            out.append(dict(tau=t, kind=kind, cell=a.cell, Nstar=Nor, Nstar_trunc_exp=Nte, N50=n50, flag=flag, ratio=n50 / Nte,
+                            ok=(flag == "ok") and (0.5 <= n50 / Nte <= 2),
+                            definite_fail=(flag == "right-censored") and Nte < N_LIST[-1] / 2))
 
 O = pd.DataFrame(out); pd.set_option("display.width", 200, "display.max_columns", 30)
 print(O.round(2).to_string(index=False))
 if len(O):
-    print("\npass (within 2x), flag=ok only:\n", O[O.flag == "ok"].groupby(["tau", "kind"]).ok.agg(["mean", "size"]).round(2))
-    print("definite fails (right-censored, N* < pool/2):", int(O.definite_fail.sum()))
+    print("\npass (within 2x of CORRECTED N*), flag=ok only:\n", O[O.flag == "ok"].groupby(["tau", "kind"]).ok.agg(["mean", "size"]).round(2))
+    print("definite fails (right-censored, corrected N* < pool/2):", int(O.definite_fail.sum()))
 
 O["git"] = GIT
 O.to_csv(f"smoke tests/results/b8c_crossover_{STATE}_{SEED}_{FLIP_SEED}_g{G}.csv", index=False)

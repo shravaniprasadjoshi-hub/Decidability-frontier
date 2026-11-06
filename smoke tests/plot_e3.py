@@ -1,6 +1,6 @@
 """plot_e3.py: E3 frontier figures from a12 CSVs (+ optional faithful-Holm panel from b8b npz logs).
 
-Run from repo root:  python "smoke tests/results/plot_e3.py" ["smoke tests"]     (arg = folder holding the files; default 'smoke tests')
+Run from repo root:  python "smoke tests/plot_e3.py" ["smoke tests/results"]     (arg = folder holding the files; default 'smoke tests/results')
 Reads : a12_controlled_CA_<seed>_<flip>.csv   (needs the *_exp columns, i.e. patched a12)
         zlog_CA_<seed>_<flip>_<cfg>_g<gamma>_N<N>_tau<tau>.npz   (b8b output; optional, Fig 3 skipped if none)
 Writes: figs/e3_fig1_frac_certifiable.png, e3_fig2_tau_curves.png, e3_fig3_holm_power.png, e3_summary.csv, e3_holm_power_<exp|real>.csv
@@ -16,7 +16,6 @@ import sys, os, re, glob
 import numpy as np, pandas as pd
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from scipy.special import ndtr
 
 D = sys.argv[1] if len(sys.argv) > 1 else "smoke tests/results"
 OUT = os.path.join(D, "figs"); os.makedirs(OUT, exist_ok=True)
@@ -52,10 +51,8 @@ def series(d):
 S = {k: series(d) for k, d in arms.items()}
 pd.concat([s.assign(seed=k[0], flip=k[1]) for k, s in S.items()]).to_csv(os.path.join(OUT, "e3_summary.csv"), index=False)
 
-STY = {"inf": ("k", "-", "N=inf (expected counts)"), 
-       "unc20k": ("C0", "-", "N=20k (uncorrected, z=1.645)"),
-       "bon20k": ("C3", "--", "N=20k (conservative Bonferroni-2K envelope)"), 
-       "unc5k": ("C2", ":", "N=5k (uncorrected, z=1.645)")}
+STY = {"inf": ("k", "-", "N=inf (expected counts)"), "unc20k": ("C0", "-", "N=20k, z=1.645"),
+       "bon20k": ("C3", "--", "N=20k, Bonferroni-2K (envelope)"), "unc5k": ("C2", ":", "N=5k, z=1.645")}
 
 def band(ax, kind, t):
     for name, (c, ls, lab) in STY.items():
@@ -72,10 +69,9 @@ for i, t in enumerate(TAUS):
     for j, kind in enumerate(["par", "disp"]):
         ax = axs[i, j]; band(ax, kind, t)
         ax.set_title(f"{'parity' if kind == 'par' else 'disparity'} certifiable, tau={t}")
-        if j == 0: ax.set_ylabel("share of all 31 cells")
+        if j == 0: ax.set_ylabel("share of 31 cells")
 axs[0, 0].legend(fontsize=8)
-fig.suptitle(f"Share of 31 intersectional cells certifiable vs delta (CA only; {len(S)} arms)")
-fig.text(0.5, 0.01, "Thin lines = 3-4 individual arms (seed/flip); thick line = mean across arms. Denominator = all 31 cells.", ha="center", fontsize=9, style="italic")
+fig.suptitle(f"E3: share of cells certifiable vs delta ({len(S)} arms; thin = arm, thick = mean; no multiplicity beyond the stated z)")
 fig.tight_layout(); fig.savefig(os.path.join(OUT, "e3_fig1_frac_certifiable.png"), dpi=150); plt.close(fig)
 
 # ---------- Fig 2: tau_min curves across cells (median + IQR), pooled over arms at each gamma ----------
@@ -97,7 +93,6 @@ for ax, which, ttl in [(axs[0], 1, "tau_par_min: smallest tau at which parity is
 axs[0].set_ylabel("tau (median, IQR over cells x arms)"); axs[0].legend(fontsize=8)
 axs[0].text(0.02, 0.97, "parity certifiable at tau where curve < tau", transform=axs[0].transAxes, va="top", fontsize=7)
 axs[1].text(0.02, 0.97, "disparity certifiable at tau where curve > tau", transform=axs[1].transAxes, va="top", fontsize=7)
-fig.text(0.5, -0.02, "Thin lines = 3-4 individual arms (seed/flip). State = CA only. Metrics aggregated over cells and arms.", ha="center", fontsize=9, style="italic")
 fig.tight_layout(); fig.savefig(os.path.join(OUT, "e3_fig2_tau_curves.png"), dpi=150); plt.close(fig)
 
 # ---------- Fig 3: faithful Holm vs uncorrected power from b8b npz (optional) ----------
@@ -160,7 +155,7 @@ if recs:
             ax.set_xlabel("assumed delta"); ax.grid(alpha=0.3); ax.set_ylim(-0.02, 1.02)
     axs[0, 0].legend(fontsize=7); axs[0, 0].set_ylabel("rejection rate"); axs[1, 0].set_ylabel("rejection rate")
     fig.suptitle(f"E3: power, uncorrected vs Holm(2K); thin = arm, thick = mean of {n_arms} arms; denominator = d*>delta ({DENOM} counts); hollow = <5 certifiable cells", fontsize=9)
-    fig.tight_layout(); fig.savefig(os.path.join(OUT, "e3_fig3_holm_power.png"), dpi=150); plt.close(fig)
+    fig.tight_layout(); fig.savefig(os.path.join(OUT, f"e3_fig3_holm_power_{DENOM}.png"), dpi=150); plt.close(fig)
     if warn: print("WARNING: several npz cfg hashes for", sorted(warn), "-> used the newest; delete stale zlogs if unsure")
 else:
     print("no zlog npz found -> Fig 3 skipped")
