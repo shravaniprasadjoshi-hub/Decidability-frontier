@@ -3,4 +3,9 @@ data/
 # regenerable
 *.csv
 *.json
-*.npz
+*.npzsmoke tests/results/*.png
+smoke tests/results/e1_*
+smoke tests/results/b8a_coverage_*.csv
+smoke tests/results/*.png
+smoke tests/results/e1_*
+smoke tests/results/b8a_coverage_*.csv
