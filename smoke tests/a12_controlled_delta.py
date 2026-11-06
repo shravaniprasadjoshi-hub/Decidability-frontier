@@ -2,7 +2,7 @@
 A12: controlled-Delta semi-synthetic arm (pool level, N = infinity, noise-free propensity). 
 Extends smoke test 3 and needs bounds.py and common.py to be in the same folder / PYTHONPATH.
 
-python "smoke tests/results/a12_controlled_delta.py"
+python "smoke tests/a12_controlled_delta.py"
 
 Env: STATE (CA), SEED (0), FLIP_SEED (123), SYNTH=1 (offline logic test only)
 """
@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import subprocess, json, hashlib
 from common import build, J, M_MIN_DEFAULT, GRID
-from bounds import Cell, endpoints, breakdown, gap, verdict, bonferroni_z
+from bounds import Cell, endpoints, breakdown, gap, verdict, nstar_trunc_exp, _scaled, bonferroni_z
 
 # CONFIG
 STATE, YEAR = os.environ.get("STATE", "CA"), "2018"
@@ -45,11 +45,12 @@ select, grouped, amax = S.select, S.grouped, S.amax
 
 Z_ZS = {"unc": 1.645, "bon": bonferroni_z(0.05, 2 * len(others))}
 
-NGRID = np.geomspace(1_000, 2_000_000, 240)
+# NGRID = np.geomspace(1_000, 2_000_000, 240)
 
+"""
 def _scaled(c, f): 
     return Cell(c.n_j * f, c.na_j * f, c.k_j * f)
-
+    
 def nstar_trunc_exp(cg, cref, delta, tau, kind, z, m_min, n_pool):
     want = "disparity" if kind == "disp" else "parity"
     good = np.array([verdict(_scaled(cg, N / n_pool), _scaled(cref, N / n_pool), delta, tau, z, m_min) == want for N in NGRID])
@@ -57,6 +58,7 @@ def nstar_trunc_exp(cg, cref, delta, tau, kind, z, m_min, n_pool):
     if len(bad) == 0: return float(NGRID[0])
     if bad[-1] == len(NGRID) - 1: return np.inf
     return float(NGRID[bad[-1] + 1])
+"""
 
 def exp_cols(cg, cref, dlt, n_pool, taus, zs, m_min, Ns=(5000, 20000)):
     eg, er = endpoints(cg, 0.0, m_min), endpoints(cref, 0.0, m_min)

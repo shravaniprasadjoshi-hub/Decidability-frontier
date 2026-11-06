@@ -2,21 +2,29 @@
 B8c: N sweep, observed per-cell crossover vs closed-form N*.
 Needs bounds.py, common.py, multiplicity.py and the a12 CSV for the SAME (STATE, SEED, FLIP_SEED, GAMMA, M_MIN).
 Env: STATE (CA), SEED (0), FLIP_SEED (123), GAMMA (0.02), R (200)
+Run: python "smoke tests/b8c_n_sweep.py"
 """
 import os, numpy as np, pandas as pd
+import subprocess, json, hashlib
 from bounds import Cell, endpoints
 from multiplicity import holm, cell_pvalues, family_pvalues
 from common import build, J, M_MIN_DEFAULT
 
-try: 
-    GIT = subprocess.check_output(["git","rev-parse","HEAD"], text=True).strip()[:10] + ("+dirty" if subprocess.check_output(["git","status","--porcelain"], text=True).strip() else "")
-except Exception: 
-    GIT = "nogit"
-    
 STATE, SEED, FLIP_SEED = os.environ.get("STATE", "CA"), int(os.environ.get("SEED", 0)), int(os.environ.get("FLIP_SEED", 123))
-G, R, M_MIN, ALPHA = float(os.environ.get("GAMMA", 0.02)), int(os.environ.get("R", 200)), M_MIN_DEFAULT, 0.05   # M_MIN fixed at 10 (E4 decision)
+G, R, M_MIN, ALPHA = float(os.environ.get("GAMMA", 0.02)), int(os.environ.get("R", 200)), M_MIN_DEFAULT, 0.05
 TAUS = [0.05, 0.02]
 N_LIST = [5000, 10000, 20000, 35000, 50000, 75000, 100000, 150000, 195665]
+
+def _git():
+    try:
+        h = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+        dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip())
+        return h[:10] + ("+dirty" if dirty else "")
+    except Exception:
+        return "nogit"
+GIT = _git()
+print(f"git={GIT}")
+
 S = build(state=STATE, seed=SEED, flip_seed=FLIP_SEED)
 Y, n, C, names, ref, others, Dtrue = S.Y, S.n, S.C, S.names, S.ref, S.others, S.Dtrue
 key, K = S.key, len(others)
@@ -54,7 +62,7 @@ P = pd.DataFrame(rows); P.to_csv(f"smoke tests/results/b8c_power_{STATE}_{SEED}_
 def cross(Ns, pw):
     pw = np.asarray(pw)
     if np.isnan(pw).any(): return np.nan, "nan"
-    if pw[0] >= .5: return Ns[0], "left-censored" # already >=0.5 at smallest N: only an upper bound on N50
+    if pw[0] >= .5: return Ns[0], "left-censored"
     j = np.flatnonzero(pw >= .5)
     if len(j) == 0: return np.inf, "right-censored"
     j = j[0]; a, b = np.log(Ns[j-1]), np.log(Ns[j])
@@ -65,16 +73,17 @@ out = []
 for t in TAUS:
     for kind, col in (("disp", "pow_disp_unc"), ("par", "pow_par_unc")):
         for _, a in A.iterrows():
-            Nstar = a[f"Nstar_{kind}_unc@{t}"]
-            if not (N_LIST[0] <= Nstar <= N_LIST[-1]): continue            # only observable range
+            Nstar = a[f"Nstar_trunc_exp_{kind}@{t}"]
+            if not (N_LIST[0] <= Nstar <= N_LIST[-1]): continue
             sub = P[(P.tau == t) & (P.cell == a.cell)].sort_values("N")
             n50, flag = cross(sub.N.values, sub[col].values)
             out.append(dict(tau=t, kind=kind, cell=a.cell, Nstar=Nstar, N50=n50, flag=flag, ratio=n50 / Nstar,
                             ok=(flag == "ok") and (0.5 <= n50 / Nstar <= 2),
-                            definite_fail=(flag == "right-censored") and Nstar < N_LIST[-1] / 2,))
-O = pd.DataFrame(out); pd.set_option("display.width", 200)
+                            definite_fail=(flag == "right-censored") and Nstar < N_LIST[-1] / 2))
+
+O = pd.DataFrame(out); pd.set_option("display.width", 200, "display.max_columns", 30)
 print(O.round(2).to_string(index=False))
-if len(O): 
+if len(O):
     print("\npass (within 2x), flag=ok only:\n", O[O.flag == "ok"].groupby(["tau", "kind"]).ok.agg(["mean", "size"]).round(2))
     print("definite fails (right-censored, N* < pool/2):", int(O.definite_fail.sum()))
 
