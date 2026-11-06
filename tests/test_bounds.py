@@ -128,3 +128,17 @@ def test_se_matches_empirical_sd_and_between_term_matters():
     sd = np.std(L)
     assert np.mean(se_b) / sd == pytest.approx(1.0, abs=0.06)
     assert np.mean(se_nb) / sd < 0.94          # old se (fixed weights) must be visibly too small here
+
+def test_nstar_trunc_exp():
+    import numpy as np
+    from bounds import Cell, nstar_trunc_exp, NGRID, _scaled, verdict
+    
+    c = Cell(np.array([50, 50, 50]), np.array([20, 20, 20]), np.array([5, 5, 5]))
+    ref = Cell(np.array([100, 100, 100]), np.array([40, 40, 40]), np.array([10, 10, 10]))
+    
+    nstar = nstar_trunc_exp(c, ref, 0.05, 0.1, "disp", 1.645, 10, 1000)
+    ok_array = np.array([verdict(_scaled(c, N/1000), _scaled(ref, N/1000), 0.05, 0.1, 1.645, 10) == "disparity" for N in NGRID])
+    bad = np.flatnonzero(~ok_array)
+    brute = np.inf if len(bad) > 0 and bad[-1] == len(NGRID) - 1 else (float(NGRID[0]) if len(bad)==0 else float(NGRID[bad[-1] + 1]))
+    
+    assert np.isclose(nstar, brute) or (nstar == np.inf and brute == np.inf)
