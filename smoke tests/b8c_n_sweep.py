@@ -10,19 +10,23 @@ compare the original rule against the corrections. Only cells with corrected N* 
 N* = 'last failing N on the grid + 1'; the observed crossover = 'first N with power >= 0.5'. They differ if the verdict is non-monotone in N (m_min truncation).
 """
 import os, numpy as np, pandas as pd
-from bounds import Cell, endpoints
+from bounds import Cell, endpoints, definite_fail
 from multiplicity import holm, cell_pvalues, family_pvalues
 from common import build, J, M_MIN_DEFAULT, git_state as _git
 
 STATE, SEED, FLIP_SEED = os.environ.get("STATE", "CA"), int(os.environ.get("SEED", 0)), int(os.environ.get("FLIP_SEED", 123))
 G, R, M_MIN, ALPHA = float(os.environ.get("GAMMA", 0.02)), int(os.environ.get("R", 200)), M_MIN_DEFAULT, 0.05
 TAUS = [0.05, 0.02]
-N_LIST = [5000, 10000, 20000, 35000, 50000, 75000, 100000, 150000, 195665]
+N_BASE = [5000, 10000, 20000, 35000, 50000, 75000, 100000, 150000]
 
 GIT = _git()
 print(f"git={GIT}")
 
 S = build(state=STATE, seed=SEED, flip_seed=FLIP_SEED)
+N_LIST = N_BASE + [S.n] # last grid point = pool size, no hardcoded 195665
+import json, hashlib
+CFG = dict(script="b8c", state=STATE, seed=SEED, flip_seed=FLIP_SEED, gamma=G, R=R, m_min=M_MIN, taus=TAUS, N_list=N_LIST, alpha=ALPHA)
+CFG_HASH = hashlib.sha1(json.dumps(CFG, sort_keys=True).encode()).hexdigest()[:8]
 Y, n, C, names, ref, others, Dtrue = S.Y, S.n, S.C, S.names, S.ref, S.others, S.Dtrue
 key, K = S.key, len(others)
 D, prop = S.select(G, S.eps0); gr = S.grouped(key, C * J, D, prop); dlt = S.amax(S.dgap(gr)[1])
@@ -79,7 +83,7 @@ for t in TAUS:
             n50, flag = cross(sub.N.values, sub[col].values)
             out.append(dict(tau=t, kind=kind, cell=a.cell, Nstar=Nor, Nstar_trunc_exp=Nte, N50=n50, flag=flag, ratio=n50 / Nte,
                             ok=(flag == "ok") and (0.5 <= n50 / Nte <= 2),
-                            definite_fail=(flag == "right-censored") and Nte < N_LIST[-1] / 2))
+                            definite_fail=definite_fail(flag, Nte, N_LIST[-1])))
 
 O = pd.DataFrame(out); pd.set_option("display.width", 200)
 print(O.round(2).to_string(index=False))
@@ -96,7 +100,7 @@ if len(O):
     ))
     
     # distinct (seed, flip, cell) counts
-    print("\nDistinct (seed, flip, cell) passing 2x rule (not independent rows):")
+    print("\nDistinct cells passing 2x rule (one seed/flip/gamma run; cells repeat across tau, so rows are not independent):")
     print(O[O.ok].groupby(["kind", "tau"]).agg(distinct_cells=("cell", "nunique")))
     
     # parity explanation
@@ -106,4 +110,5 @@ if len(O):
     print(f"\ndefinite fails (right-censored, N* < pool/2): {int(O.definite_fail.sum())} (pool/2 = {pool_size/2:.0f})")
 
 O["git"] = GIT
+O["cfg_hash"] = CFG_HASH
 O.to_csv(f"smoke tests/results/b8c_crossover_{STATE}_{SEED}_{FLIP_SEED}_g{G}.csv", index=False)

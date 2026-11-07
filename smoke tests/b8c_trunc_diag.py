@@ -10,7 +10,7 @@ import os, re, glob, numpy as np, pandas as pd
 pd.set_option("display.max_columns", 30)
 
 # NOTE: Imported nstar_trunc_exp from bounds
-from bounds import Cell, gap, nstar_trunc_exp
+from bounds import Cell, gap, nstar_trunc_exp, definite_fail
 from common import build, J, M_MIN_DEFAULT, git_state
 
 STATE, Z, M_MIN = os.environ.get("STATE", "CA"), 1.645, M_MIN_DEFAULT
@@ -26,7 +26,8 @@ for f in sorted(glob.glob(f"smoke tests/results/b8c_crossover_{STATE}_*_g*.csv")
     S = built[(seed, flip)]; n, C = S.n, S.C; names = list(S.names)
     D, prop = S.select(G, S.eps0); gr = S.grouped(S.key, C * J, D, prop); dlt = S.amax(S.dgap(gr)[1])
     cnt = {k: gr[k].reshape(C, J) for k in ("n", "na", "ka")}
-    cexp = {"n": cnt["n"], "na": gr["A"].reshape(C, J), "ka": gr["Ay"].reshape(C, J)}   # expected counts under the audit DGP
+    A_, Ay_ = gr["A"].reshape(C, J), gr["Ay"].reshape(C, J)
+    cexp = {"n": cnt["n"], "na": np.minimum(A_, cnt["n"]), "ka": np.minimum(Ay_, A_)}   # same clip as a12.cl_e
     cell = lambda c, s=1.0, E=False: Cell(*[(cexp if E else cnt)[k][c] * s for k in ("n", "na", "ka")])
     ref = S.ref
 
@@ -41,8 +42,10 @@ for f in sorted(glob.glob(f"smoke tests/results/b8c_crossover_{STATE}_*_g*.csv")
     
     for _, r in d.iterrows():
         c = names.index(r.cell)
-        nt = nstar_trunc_exp(...)
-        nte = nstar_trunc_exp(...)
+        nt  = nstar_trunc_exp(cell(c), cell(ref), dlt, r.tau, r.kind, Z, M_MIN, n)                    # realized counts
+        nte = nstar_trunc_exp(cell(c, 1.0, True), cell(ref, 1.0, True), dlt, r.tau, r.kind, Z, M_MIN, n)  # expected counts
+        a12v = r.get("Nstar_trunc_exp", np.nan)                                                         # value b8c copied from a12
+        chk = 0.0 if (np.isinf(nte) and np.isinf(a12v)) else abs(nte / a12v - 1)
         
         out.append(dict(seed=seed, flip=flip, gamma=G, tau=r.tau, kind=r.kind, cell=r.cell, 
                         n_cell=int(cnt["n"][c].sum()), Nstar=r.Nstar,
@@ -50,6 +53,7 @@ for f in sorted(glob.glob(f"smoke tests/results/b8c_crossover_{STATE}_*_g*.csv")
                         ng_at_Nstar=cnt["n"][c].sum() * r.Nstar / n,
                         Nstar_trunc=nt, Nstar_exp=nstar_cf(c, r.kind, r.tau, True), 
                         Nstar_trunc_exp=nte, N50=r.N50, flag=r.flag,
+                        n_pool=n, rebuild_relerr_trunc=chk,
                         git=GIT, cfg_hash=cfg_hash))
     print("done", f)
 
@@ -63,6 +67,8 @@ T["ok"] = (T.flag == "ok") & T.ratio.between(0.5, 2)
 T["ok_trunc"] = (T.flag == "ok") & T.ratio_trunc.between(0.5, 2)
 T["ok_exp"] = (T.flag == "ok") & T.ratio_exp.between(0.5, 2)
 T["ok_trunc_exp"] = (T.flag == "ok") & T.ratio_trunc_exp.between(0.5, 2)
+T["sfc"] = T.seed.astype(str) + "_" + T.flip.astype(str) + "_" + T.cell   # distinct (seed, flip, cell) key
+T["definite_fail"] = [definite_fail(f, x, m) for f, x, m in zip(T.flag, T.Nstar_trunc_exp, T.n_pool)]
 
 T.to_csv(f"smoke tests/results/b8c_trunc_diag_{STATE}.csv", index=False)
 
@@ -71,20 +77,19 @@ print("\nNOTE: Selection is conditional on the corrected N* (Nstar_trunc_exp) fr
 print("\nNOTE: Parity ratios (N50/N*) are ~1.3-1.5 because parity is an IUT (both one-sided tests must reject).")
 
 o = T[T.flag == "ok"]
-print("\npass within 2x, flag=ok only:")
-print(o.groupby(["kind", "tau"]).agg(
-    n=("ok", "size"), 
-    ok_flag=("flag", lambda x: (x == "ok").sum()),
-    left=("flag", lambda x: (x == "left-censored").sum()),
-    right=("flag", lambda x: (x == "right-censored").sum()),
-    nan=("flag", lambda x: (x == "nan").sum()),
+print("\nrebuild check (trunc_exp vs a12 column): max rel err",
+      T.rebuild_relerr_trunc[np.isfinite(T.rebuild_relerr_trunc)].max())
+flags = T.groupby(["kind", "tau"]).agg(
+    rows=("flag", "size"), ok=("flag", lambda x: (x == "ok").sum()), left=("flag", lambda x: (x == "left-censored").sum()),
+    right=("flag", lambda x: (x == "right-censored").sum()), nan=("flag", lambda x: (x == "nan").sum()),
+    definite_fail=("definite_fail", "sum"))
+rates = o.groupby(["kind", "tau"]).agg(
     orig=("ok", "mean"), trunc=("ok_trunc", "mean"), exp=("ok_exp", "mean"), trunc_exp=("ok_trunc_exp", "mean"),
-    med_ratio=("ratio", "median"), med_trunc_exp=("ratio_trunc_exp", "median")
-).round(2))
-
-print("\nDistinct (seed, flip, cell) passing 2x rule:")
-print(o[o.ok_trunc_exp].groupby(["kind", "tau"]).agg(distinct_cells=("cell", "nunique")))
-
-c = T[T.flag != "ok"]
-pool_size = S.n  # Removed hardcoded 195665
-print(f"\nright-censored: {len(c)}; definite fails (Nstar < pool/2): {(c.Nstar < pool_size / 2).sum()}; with trunc_exp N*: {(c.Nstar_trunc_exp < pool_size / 2).sum()}")
+    med_ratio=("ratio", "median"), med_trunc_exp=("ratio_trunc_exp", "median"))
+print("\nflag counts (all rows) next to pass rates (flag=ok rows ONLY; censored rows are excluded from every rate):")
+print(pd.concat([flags, rates], axis=1).round(2))
+d_all = T.groupby(["kind", "tau"]).sfc.nunique().rename("distinct_all")
+d_pass = o[o.ok_trunc_exp].groupby(["kind", "tau"]).sfc.nunique().rename("distinct_pass")
+d_fail = o[~o.ok_trunc_exp].groupby(["kind", "tau"]).sfc.nunique().rename("distinct_fail")
+print("\ndistinct (seed, flip, cell) per group; rows share RNG streams across gamma and repeat across tau, so do not treat rows as independent:")
+print(pd.concat([d_all, d_pass, d_fail], axis=1).fillna(0).astype(int))

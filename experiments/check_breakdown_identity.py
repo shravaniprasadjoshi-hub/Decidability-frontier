@@ -1,16 +1,19 @@
 """
 experiments/check_breakdown_identity.py
-Verifies the breakdown identity: d*_par > dlt iff tau_minus_margin < tau.
-tau_minus_margin = tau - max(Dhi, -Dlo).
-Fails with exit code 1 if any mismatch (including NaN) is found.
+Checks the breakdown identity on a12 output (realized counts):
+  (i)  d*_par@tau == (tau - max(Dhi0, -Dlo0)) / S   (recomputed here from bounds.endpoints)
+  (ii) parity certifiable at delta  <=>  tau_par_min0 < tau  <=>  d*_par@tau > delta_shared   (breakdown() vs gap(), two code paths)
+Naming: tau_par_min0 in a12 is the MARGIN max(Dhi, -Dlo). Here slack_par = tau - margin.
+Exits 1 on any mismatch or non-finite value. Env: STATE, SEED, FLIP_SEED.
 """
 import pandas as pd
 import numpy as np
 import sys
+import os
 from bounds import Cell, endpoints, breakdown
 from common import build, J, M_MIN_DEFAULT
 
-STATE, SEED, FLIP_SEED = "CA", 0, 123
+STATE, SEED, FLIP_SEED = os.environ.get("STATE", "CA"), int(os.environ.get("SEED", 0)), int(os.environ.get("FLIP_SEED", 123))
 M_MIN = M_MIN_DEFAULT
 TAUS = [0.05, 0.02]
 
@@ -44,11 +47,14 @@ for g in df['gamma'].unique():
             Dlo_0 = cg_0["L"] - er_0["U"]
             S_total = cg_0["S"] + er_0["S"]
             
-            tau_minus_margin = tau - max(Dhi_0, -Dlo_0)
-            theoretical_d_star = tau_minus_margin / S_total if S_total > 0 else np.inf
+            slack_par = tau - max(Dhi_0, -Dlo_0)
+            theoretical_d_star = slack_par / S_total if S_total > 0 else np.inf
             
             d_vals.append(row[f'd*_par@{tau}'])
             theory_vals.append(theoretical_d_star)
+            flags_ok = bool(np.isfinite(row["tau_par_min0"]) and ((row["tau_par_min0"] < tau) == (row[f"d*_par@{tau}"] > dlt)))
+            if not flags_ok and abs(row["tau_par_min0"] - tau) > 1e-9:
+                print(f"  FAIL (ii) {c_name} tau={tau}"); failed = True
             
         d = np.array(d_vals)
         theory = np.array(theory_vals)
