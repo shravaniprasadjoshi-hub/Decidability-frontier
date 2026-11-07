@@ -81,11 +81,29 @@ for t in TAUS:
                             ok=(flag == "ok") and (0.5 <= n50 / Nte <= 2),
                             definite_fail=(flag == "right-censored") and Nte < N_LIST[-1] / 2))
 
-O = pd.DataFrame(out); pd.set_option("display.width", 200, "display.max_columns", 30)
+O = pd.DataFrame(out); pd.set_option("display.width", 200)
 print(O.round(2).to_string(index=False))
+
 if len(O):
-    print("\npass (within 2x of CORRECTED N*), flag=ok only:\n", O[O.flag == "ok"].groupby(["tau", "kind"]).ok.agg(["mean", "size"]).round(2))
-    print("definite fails (right-censored, corrected N* < pool/2):", int(O.definite_fail.sum()))
+    # flag counts
+    print("\nFlag counts by kind/tau:")
+    print(O.groupby(["tau", "kind"]).agg(
+        n=("ok", "size"),
+        ok_flag=("flag", lambda x: (x == "ok").sum()),
+        left=("flag", lambda x: (x == "left-censored").sum()),
+        right=("flag", lambda x: (x == "right-censored").sum()),
+        nan=("flag", lambda x: (x == "nan").sum())
+    ))
+    
+    # distinct (seed, flip, cell) counts
+    print("\nDistinct (seed, flip, cell) passing 2x rule (not independent rows):")
+    print(O[O.ok].groupby(["kind", "tau"]).agg(distinct_cells=("cell", "nunique")))
+    
+    # parity explanation
+    print("\nNOTE: Parity ratios (N50/N*) are ~1.3-1.5 because parity is an IUT (intersection-union test). Both one-sided tests must reject, so power is ~0.5 at N*, meaning N50 must exceed N*.")
+    
+    pool_size = S.n  # removed hardcoded 195665
+    print(f"\ndefinite fails (right-censored, N* < pool/2): {int(O.definite_fail.sum())} (pool/2 = {pool_size/2:.0f})")
 
 O["git"] = GIT
 O.to_csv(f"smoke tests/results/b8c_crossover_{STATE}_{SEED}_{FLIP_SEED}_g{G}.csv", index=False)

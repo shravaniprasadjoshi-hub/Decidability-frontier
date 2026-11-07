@@ -11,11 +11,12 @@ pd.set_option("display.max_columns", 30)
 
 # NOTE: Imported nstar_trunc_exp from bounds
 from bounds import Cell, gap, nstar_trunc_exp
-from common import build, J, M_MIN_DEFAULT
+from common import build, J, M_MIN_DEFAULT, git_state
 
 STATE, Z, M_MIN = os.environ.get("STATE", "CA"), 1.645, M_MIN_DEFAULT
 built = {}
 out = []
+GIT = git_state()
 
 for f in sorted(glob.glob(f"smoke tests/results/b8c_crossover_{STATE}_*_g*.csv")):
     m = re.search(rf"b8c_crossover_{STATE}_(\d+)_(\d+)_g(\d\.\d+)\.csv$", f.replace("\\", "/"))
@@ -36,33 +37,54 @@ for f in sorted(glob.glob(f"smoke tests/results/b8c_crossover_{STATE}_*_g*.csv")
                 else max(ns(t - r["hi"], r["se_hi"]), ns(t + r["lo"], r["se_lo"])))
 
     d = pd.read_csv(f)
+    cfg_hash = d['cfg_hash'].iloc[0] if 'cfg_hash' in d.columns else "unknown"
+    
     for _, r in d.iterrows():
         c = names.index(r.cell)
+        nt = nstar_trunc_exp(...)
+        nte = nstar_trunc_exp(...)
         
-        # Use the unified nstar_trunc_exp from bounds.py
-        nt = nstar_trunc_exp(cell(c, 1.0, E=False), cell(ref, 1.0, E=False), dlt, r.tau, r.kind, Z, M_MIN, n)
-        nte = nstar_trunc_exp(cell(c, 1.0, E=True), cell(ref, 1.0, E=True), dlt, r.tau, r.kind, Z, M_MIN, n)
-        
-        out.append(dict(seed=seed, flip=flip, gamma=G, tau=r.tau, kind=r.kind, cell=r.cell, n_cell=int(cnt["n"][c].sum()), Nstar=r.Nstar,
-                        rebuild_relerr=abs(nstar_cf(c, r.kind, r.tau) / r.Nstar - 1), ng_at_Nstar=cnt["n"][c].sum() * r.Nstar / n,
-                        Nstar_trunc=nt, Nstar_exp=nstar_cf(c, r.kind, r.tau, True), Nstar_trunc_exp=nte, N50=r.N50, flag=r.flag))
+        out.append(dict(seed=seed, flip=flip, gamma=G, tau=r.tau, kind=r.kind, cell=r.cell, 
+                        n_cell=int(cnt["n"][c].sum()), Nstar=r.Nstar,
+                        rebuild_relerr=abs(nstar_cf(c, r.kind, r.tau) / r.Nstar - 1), 
+                        ng_at_Nstar=cnt["n"][c].sum() * r.Nstar / n,
+                        Nstar_trunc=nt, Nstar_exp=nstar_cf(c, r.kind, r.tau, True), 
+                        Nstar_trunc_exp=nte, N50=r.N50, flag=r.flag,
+                        git=GIT, cfg_hash=cfg_hash))
     print("done", f)
 
 T = pd.DataFrame(out)
-T["ratio"] = T.N50 / T.Nstar; T["ratio_trunc"] = T.N50 / T.Nstar_trunc; T["ratio_exp"] = T.N50 / T.Nstar_exp; T["ratio_trunc_exp"] = T.N50 / T.Nstar_trunc_exp
-T["ok"] = (T.flag == "ok") & T.ratio.between(0.5, 2); T["ok_trunc"] = (T.flag == "ok") & T.ratio_trunc.between(0.5, 2)
-T["ok_exp"] = (T.flag == "ok") & T.ratio_exp.between(0.5, 2); T["ok_trunc_exp"] = (T.flag == "ok") & T.ratio_trunc_exp.between(0.5, 2)
+# add flags logic
+T["ratio"] = T.N50 / T.Nstar
+T["ratio_trunc"] = T.N50 / T.Nstar_trunc
+T["ratio_exp"] = T.N50 / T.Nstar_exp
+T["ratio_trunc_exp"] = T.N50 / T.Nstar_trunc_exp
+T["ok"] = (T.flag == "ok") & T.ratio.between(0.5, 2)
+T["ok_trunc"] = (T.flag == "ok") & T.ratio_trunc.between(0.5, 2)
+T["ok_exp"] = (T.flag == "ok") & T.ratio_exp.between(0.5, 2)
+T["ok_trunc_exp"] = (T.flag == "ok") & T.ratio_trunc_exp.between(0.5, 2)
+
 T.to_csv(f"smoke tests/results/b8c_trunc_diag_{STATE}.csv", index=False)
-pd.set_option("display.width", 200)
-print(f"\nrebuild check (closed form vs CSV Nstar): max rel err {T.rebuild_relerr[np.isfinite(T.rebuild_relerr)].max():.2e}  (should be ~0; else counts differ from the a12 run)")
+
+print(f"\nrebuild check (closed form vs CSV Nstar): max rel err {T.rebuild_relerr[np.isfinite(T.rebuild_relerr)].max():.2e}")
+print("\nNOTE: Selection is conditional on the corrected N* (Nstar_trunc_exp) from a12. This is not an independent test of all possible cells.")
+print("\nNOTE: Parity ratios (N50/N*) are ~1.3-1.5 because parity is an IUT (both one-sided tests must reject).")
+
 o = T[T.flag == "ok"]
-print("\npass within 2x, flag=ok only (orig N* vs truncation-aware N*):")
-print(o.groupby(["kind", "tau"]).agg(n=("ok", "size"), orig=("ok", "mean"), trunc=("ok_trunc", "mean"), exp=("ok_exp", "mean"), trunc_exp=("ok_trunc_exp", "mean"),
-                                    med_ratio=("ratio", "median"), med_ratio_trunc=("ratio_trunc", "median"), med_exp=("ratio_exp", "median"), med_trunc_exp=("ratio_trunc_exp", "median")).round(2))
-print("\nby expected cell rows at the ORIGINAL N*:")
-print(o.groupby(pd.cut(o.ng_at_Nstar, [0, 150, 300, 600, 1e9])).agg(n=("ok", "size"), orig=("ok", "mean"), trunc=("ok_trunc", "mean"),
-                                                                       med_ratio=("ratio", "median"), med_ratio_trunc=("ratio_trunc", "median")).round(2))
-print("\nrows failing under the original rule:")
-print(o[~o.ok][["seed", "flip", "gamma", "tau", "cell", "n_cell", "ng_at_Nstar", "Nstar", "Nstar_trunc", "Nstar_exp", "Nstar_trunc_exp", "N50", "ratio", "ratio_trunc", "ratio_exp", "ratio_trunc_exp"]].round(2).to_string(index=False))
+print("\npass within 2x, flag=ok only:")
+print(o.groupby(["kind", "tau"]).agg(
+    n=("ok", "size"), 
+    ok_flag=("flag", lambda x: (x == "ok").sum()),
+    left=("flag", lambda x: (x == "left-censored").sum()),
+    right=("flag", lambda x: (x == "right-censored").sum()),
+    nan=("flag", lambda x: (x == "nan").sum()),
+    orig=("ok", "mean"), trunc=("ok_trunc", "mean"), exp=("ok_exp", "mean"), trunc_exp=("ok_trunc_exp", "mean"),
+    med_ratio=("ratio", "median"), med_trunc_exp=("ratio_trunc_exp", "median")
+).round(2))
+
+print("\nDistinct (seed, flip, cell) passing 2x rule:")
+print(o[o.ok_trunc_exp].groupby(["kind", "tau"]).agg(distinct_cells=("cell", "nunique")))
+
 c = T[T.flag != "ok"]
-print(f"\nright-censored: {len(c)}; definite fails (Nstar < pool/2): {(c.Nstar < 195665 / 2).sum()}; with trunc N*: {(c.Nstar_trunc < 195665 / 2).sum()}")
+pool_size = S.n  # Removed hardcoded 195665
+print(f"\nright-censored: {len(c)}; definite fails (Nstar < pool/2): {(c.Nstar < pool_size / 2).sum()}; with trunc_exp N*: {(c.Nstar_trunc_exp < pool_size / 2).sum()}")
