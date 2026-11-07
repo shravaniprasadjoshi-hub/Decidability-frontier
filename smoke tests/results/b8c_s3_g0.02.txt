@@ -1,4 +1,4 @@
-git=f4818b3136
+git=31d224a9d6
 gamma=0.02 oracle delta=0.024 R=200 K=31 M_MIN=10
 N=5000 done
 N=10000 done
@@ -29,10 +29,20 @@ N=195665 done
 0.02 disp 2.0|O|45-59 121637.26        183336.10 170237.04   ok   0.93 True          False
 0.02 disp 2.0|W|30-44  38033.58         33385.07  33360.78   ok   1.00 True          False
 
-pass (within 2x of CORRECTED N*), flag=ok only:
-            mean  size
-tau  kind            
-0.02 disp   1.0    10
-0.05 disp   1.0     5
-     par    1.0     3
-definite fails (right-censored, corrected N* < pool/2): 0
+Flag counts by kind/tau:
+            n  ok_flag  left  right  nan
+tau  kind                               
+0.02 disp  10       10     0      0    0
+0.05 disp   5        5     0      0    0
+     par    3        3     0      0    0
+
+Distinct cells passing 2x rule (one seed/flip/gamma run; cells repeat across tau, so rows are not independent):
+           distinct_cells
+kind tau                 
+disp 0.02              10
+     0.05               5
+par  0.05               3
+
+NOTE: Parity ratios (N50/N*) are ~1.3-1.5 because parity is an IUT (intersection-union test). Both one-sided tests must reject, so power is ~0.5 at N*, meaning N50 must exceed N*.
+
+definite fails (right-censored, N* < pool/2): 0 (pool/2 = 97832)

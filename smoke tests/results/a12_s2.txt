@@ -1,4 +1,4 @@
-git=f4818b3136 cfg=b39b5dd1
+git=31d224a9d6 cfg=b39b5dd1
 STATE=CA SEED=2 FLIP_SEED=789 n=195665 base rate 0.411 -> 0.624; ref='1.0|W|45-59' (n=19896), K=31
 target vs realized Delta_true: max|diff|=0.0008 (clipping only); natural Delta median |.|=0.250 -> controlled 0.045
 cells with |Delta_true|<=tau: tau=0.05: 16/31, tau=0.02: 8/31
