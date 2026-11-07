@@ -7,8 +7,8 @@ writes: results/e2_report_pooled.csv    any-wrong pooled over seeds x gamma, per
 and prints them plus the pre-registered switch-rule line.
 
 Labels (pass rule):
-  mult >= 1, corrected arm : "valid" if CP upper <= alpha else "not shown valid"
-  mult <  1, corrected arm : "no degradation found in this DGP" if 0 wrong certificates in every rep, else "degradation: ..."
+  mult >= 1, corrected arm : "validity not contradicted (assuming correctly specified delta)" if CP upper <= alpha else "not shown valid"
+  mult <  1, corrected arm : "no degradation found in this DGP" if 0 wrong certificates in every rep, else "rare wrong certificates: k reps (see events, pop_wrong)"
   unc                      : "per-test only" (no family control expected; shown for contrast)
 Pooling caveat: units (seed, gamma) share the same cells and pool, so they are not independent replications; the pooled CP interval is
 descriptive. The per-(seed, gamma) worst case is printed too.
@@ -28,7 +28,7 @@ def label(arm, mult, k, hi, alpha):
         return "per-test only"
     if mult >= 1:
         return "validity not contradicted (assuming correctly specified delta)" if hi <= alpha else "not shown valid"
-    return "no degradation found in this DGP" if k == 0 else f"degradation: {k} reps with a wrong certificate"
+    return "no degradation found in this DGP" if k == 0 else f"rare wrong certificates: {k} reps (attribution: see events, pop_wrong)"
 
 
 def pool(df, kcol, by, alpha, level):
