@@ -4,3 +4,5 @@ data/
 *.csv
 *.json
 *.npz
+# root-level results/ stays ignored
+/results/
