@@ -5,13 +5,14 @@ Checks the breakdown identity on a12 output (realized counts):
   (ii) parity certifiable at delta  <=>  tau_par_min0 < tau  <=>  d*_par@tau > delta_shared   (breakdown() vs gap(), two code paths)
 Naming: tau_par_min0 in a12 is the MARGIN max(Dhi, -Dlo). Here slack_par = tau - margin.
 Exits 1 on any mismatch or non-finite value. Env: STATE, SEED, FLIP_SEED.
+Run all arms: for a in "0 123" "1 456" "2 789" "3 321"; do set -- $a; SEED=$1 FLIP_SEED=$2 python "experiments/check_breakdown_identity.py" || exit 1; done
 """
 import pandas as pd
 import numpy as np
 import sys
 import os
-from bounds import Cell, endpoints, breakdown
-from common import build, J, M_MIN_DEFAULT
+from core.bounds import Cell, endpoints, breakdown
+from core.common import build, J, M_MIN_DEFAULT
 
 STATE, SEED, FLIP_SEED = os.environ.get("STATE", "CA"), int(os.environ.get("SEED", 0)), int(os.environ.get("FLIP_SEED", 123))
 M_MIN = M_MIN_DEFAULT
@@ -52,9 +53,11 @@ for g in df['gamma'].unique():
             
             d_vals.append(row[f'd*_par@{tau}'])
             theory_vals.append(theoretical_d_star)
-            flags_ok = bool(np.isfinite(row["tau_par_min0"]) and ((row["tau_par_min0"] < tau) == (row[f"d*_par@{tau}"] > dlt)))
-            if not flags_ok and abs(row["tau_par_min0"] - tau) > 1e-9:
-                print(f"  FAIL (ii) {c_name} tau={tau}"); failed = True
+            m0, ds = row["tau_par_min0"], row[f"d*_par@{tau}"]
+            if not (np.isfinite(m0) and np.isfinite(ds)):
+                print(f"  FAIL (ii) {c_name} tau={tau}: non-finite tau_par_min0={m0} or d*_par={ds}"); failed = True
+            elif ((m0 < tau) != (ds > dlt)) and not abs(m0 - tau) <= 1e-9:
+                print(f"  FAIL (ii) {c_name} tau={tau}: margin {m0:.6f}, d*_par {ds:.6f}, delta {dlt:.6f}"); failed = True
             
         d = np.array(d_vals)
         theory = np.array(theory_vals)

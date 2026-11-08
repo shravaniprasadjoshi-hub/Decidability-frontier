@@ -1,6 +1,6 @@
-"""Run: pytest -q test_bounds.py"""
+"""Run from repo root: PYTHONPATH=core pytest -q tests/test_bounds.py"""
 import numpy as np, pytest
-from bounds import Cell, endpoints, breakdown, clipped_bounds, verdict, gap, bonferroni_z, nstar_trunc_exp, NGRID, _scaled, _nstar_from_ok
+from bounds import Cell, endpoints, breakdown, clipped_bounds, verdict, gap, bonferroni_z, nstar_trunc_exp, NGRID, _scaled, _nstar_from_ok, definite_fail
 
 
 def cell_from(n, w, pi, mu):
@@ -173,3 +173,21 @@ def test_nstar_from_ok_non_monotone():
     assert _nstar_from_ok(np.zeros(len(NGRID), bool)) == np.inf
     ok2 = np.ones(len(NGRID), bool); ok2[-1] = False
     assert _nstar_from_ok(ok2) == np.inf # fails at the largest N
+
+def test_nstar_trunc_exp_non_monotone_through_the_function(monkeypatch):
+    """Exercises nstar_trunc_exp's own loop with a scripted non-monotone verdict (holds at idx 3, fails again at idx 10)."""
+    import bounds
+    pattern = np.ones(len(NGRID), bool); pattern[:3] = False; pattern[10] = False
+    it = iter(range(len(NGRID)))
+    monkeypatch.setattr(bounds, "verdict", lambda *a, **k: "disparity" if pattern[next(it)] else "undecided")
+    g = Cell([1000], [500], [200])
+    assert bounds.nstar_trunc_exp(g, g, 0.02, 0.05, "disp", 1.645, 10, 5000) == float(NGRID[11])
+
+
+def test_definite_fail():
+    n = 195665
+    assert definite_fail("right-censored", 50_000, n)            # 2x window [25k, 100k] fits in the grid, so the miss is certain
+    assert not definite_fail("right-censored", 120_000, n)        # N* >= n/2: miss not certain
+    assert not definite_fail("right-censored", n / 2, n)          # boundary is strict <
+    for flag in ("ok", "left-censored", "nan"):
+        assert not definite_fail(flag, 50_000, n)

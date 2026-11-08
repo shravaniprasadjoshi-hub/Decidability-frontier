@@ -11,7 +11,7 @@ N* = 'last failing N on the grid + 1'; the observed crossover = 'first N with po
 """
 import os, numpy as np, pandas as pd
 from bounds import Cell, endpoints, definite_fail
-from multiplicity import holm, cell_pvalues, family_pvalues
+from multiplicity import cell_pvalues, family_pvalues
 from common import build, J, M_MIN_DEFAULT, git_state as _git
 
 STATE, SEED, FLIP_SEED = os.environ.get("STATE", "CA"), int(os.environ.get("SEED", 0)), int(os.environ.get("FLIP_SEED", 123))
@@ -31,9 +31,13 @@ Y, n, C, names, ref, others, Dtrue = S.Y, S.n, S.C, S.names, S.ref, S.others, S.
 key, K = S.key, len(others)
 D, prop = S.select(G, S.eps0); gr = S.grouped(key, C * J, D, prop); dlt = S.amax(S.dgap(gr)[1])
 print(f"gamma={G} oracle delta={dlt:.3f} R={R} K={K} M_MIN={M_MIN}")
+A = pd.read_csv(f"smoke tests/results/a12_controlled_{STATE}_{SEED}_{FLIP_SEED}.csv"); A = A[np.isclose(A.gamma, G)]
+assert len(A) and "Nstar_trunc_exp_disp@0.05" in A.columns, "a12 CSV missing, wrong gamma, or stale (no Nstar_trunc_exp columns): rerun a12"
+a12_git, a12_cfg = A["git"].iloc[0], A["cfg_hash"].iloc[0]
+assert "dirty" not in a12_git and a12_git == GIT, f"a12 CSV is {a12_git} but this run is {GIT}: rerun a12 at this commit"
 
 rng2 = np.random.default_rng(30_000 + SEED)
-rej = {(N, t, p): np.zeros((R, 2 * K), bool) for N in N_LIST for t in TAUS for p in ("unc", "holm")}
+rej = {(N, t, p): np.zeros((R, 2 * K), bool) for N in N_LIST for t in TAUS for p in ("unc", )}
 for N in N_LIST:
     for i in range(R):
         idx = rng2.integers(0, n, N); Di = rng2.random(N) < prop[idx]; k = key[idx]; yy = Y[idx] == 1
@@ -45,7 +49,7 @@ for N in N_LIST:
         slo, shi = np.sqrt(g_("se_L")**2 + er["se_U"]**2), np.sqrt(g_("se_U")**2 + er["se_L"]**2)
         for t in TAUS:
             pv = family_pvalues(*cell_pvalues(dlo, dhi, slo, shi, t))
-            rej[(N, t, "unc")][i] = pv <= ALPHA; rej[(N, t, "holm")][i] = holm(pv, ALPHA)
+            rej[(N, t, "unc")][i] = pv <= ALPHA
     print(f"N={N} done")
 
 os.makedirs("smoke tests/results", exist_ok=True)
@@ -56,10 +60,11 @@ for N in N_LIST:
     for t in TAUS:
         for ci, c in enumerate(others):
             r = dict(gamma=G, N=N, tau=t, cell=names[c], Dtrue=Dtrue[c])
-            for p in ("unc", "holm"):
+            for p in ("unc", ):
                 m = rej[(N, t, p)].mean(0); r[f"pow_disp_{p}"], r[f"pow_par_{p}"] = m[ci], m[K + ci]
             rows.append(r)
-P = pd.DataFrame(rows); P.to_csv(f"smoke tests/results/b8c_power_{STATE}_{SEED}_{FLIP_SEED}_g{G}.csv", index=False)
+P = pd.DataFrame(rows); P["git"] = GIT; P["cfg_hash"] = CFG_HASH
+P.to_csv(f"smoke tests/results/b8c_power_{STATE}_{SEED}_{FLIP_SEED}_g{G}.csv", index=False)
 
 # observed crossover (power >= 0.5, log-N interpolation) vs N*
 def cross(Ns, pw):
@@ -71,7 +76,6 @@ def cross(Ns, pw):
     j = j[0]; a, b = np.log(Ns[j-1]), np.log(Ns[j])
     return float(np.exp(a + (.5 - pw[j-1]) / (pw[j] - pw[j-1]) * (b - a))), "ok"
 
-A = pd.read_csv(f"smoke tests/results/a12_controlled_{STATE}_{SEED}_{FLIP_SEED}.csv"); A = A[np.isclose(A.gamma, G)]
 out = []
 for t in TAUS:
     for kind, col in (("disp", "pow_disp_unc"), ("par", "pow_par_unc")):
@@ -103,12 +107,12 @@ if len(O):
     print("\nDistinct cells passing 2x rule (one seed/flip/gamma run; cells repeat across tau, so rows are not independent):")
     print(O[O.ok].groupby(["kind", "tau"]).agg(distinct_cells=("cell", "nunique")))
     
-    # parity explanation
-    print("\nNOTE: Parity ratios (N50/N*) are ~1.3-1.5 because parity is an IUT (intersection-union test). Both one-sided tests must reject, so power is ~0.5 at N*, meaning N50 must exceed N*.")
+    pr = O[(O.kind == "par") & (O.flag == "ok")].ratio
+    print("\nNOTE: parity is an intersection-union test (both one-sided tests must reject), so power at N* is below 0.5 and N50/N* > 1 is expected."
+          + (f" Observed N50/N* over {len(pr)} ok parity rows: min {pr.min():.2f}, median {pr.median():.2f}, max {pr.max():.2f}." if len(pr) else " No ok parity rows."))
     
     pool_size = S.n  # removed hardcoded 195665
     print(f"\ndefinite fails (right-censored, N* < pool/2): {int(O.definite_fail.sum())} (pool/2 = {pool_size/2:.0f})")
 
-O["git"] = GIT
-O["cfg_hash"] = CFG_HASH
+O["git"] = GIT; O["cfg_hash"] = CFG_HASH; O["a12_git"] = a12_git; O["a12_cfg"] = a12_cfg
 O.to_csv(f"smoke tests/results/b8c_crossover_{STATE}_{SEED}_{FLIP_SEED}_g{G}.csv", index=False)

@@ -17,6 +17,7 @@ STATE, Z, M_MIN = os.environ.get("STATE", "CA"), 1.645, M_MIN_DEFAULT
 built = {}
 out = []
 GIT = git_state()
+in_gits, a12_gits = set(), set()
 
 for f in sorted(glob.glob(f"smoke tests/results/b8c_crossover_{STATE}_*_g*.csv")):
     m = re.search(rf"b8c_crossover_{STATE}_(\d+)_(\d+)_g(\d\.\d+)\.csv$", f.replace("\\", "/"))
@@ -38,7 +39,10 @@ for f in sorted(glob.glob(f"smoke tests/results/b8c_crossover_{STATE}_*_g*.csv")
                 else max(ns(t - r["hi"], r["se_hi"]), ns(t + r["lo"], r["se_lo"])))
 
     d = pd.read_csv(f)
-    cfg_hash = d['cfg_hash'].iloc[0] if 'cfg_hash' in d.columns else "unknown"
+    missing = [c for c in ("cfg_hash", "git", "a12_git", "Nstar_trunc_exp") if c not in d.columns]
+    assert not missing, f"{f}: stale crossover CSV (missing {missing}); delete it and rerun b8c"
+    assert d["cfg_hash"].nunique() == 1 and d["git"].nunique() == 1 and d["a12_git"].nunique() == 1, f"{f}: mixed provenance inside one file"
+    cfg_hash = d["cfg_hash"].iloc[0]; in_gits.add(d["git"].iloc[0]); a12_gits.add(d["a12_git"].iloc[0])
     
     for _, r in d.iterrows():
         c = names.index(r.cell)
@@ -57,6 +61,9 @@ for f in sorted(glob.glob(f"smoke tests/results/b8c_crossover_{STATE}_*_g*.csv")
                         git=GIT, cfg_hash=cfg_hash))
     print("done", f)
 
+assert len(in_gits) == 1 and in_gits == a12_gits, f"inputs come from different commits: b8c {sorted(in_gits)}, a12 {sorted(a12_gits)}"
+assert not any("dirty" in g or g == "nogit" for g in in_gits), f"inputs are not from a clean commit: {sorted(in_gits)}"
+
 T = pd.DataFrame(out)
 # add flags logic
 T["ratio"] = T.N50 / T.Nstar
@@ -74,7 +81,7 @@ T.to_csv(f"smoke tests/results/b8c_trunc_diag_{STATE}.csv", index=False)
 
 print(f"\nrebuild check (closed form vs CSV Nstar): max rel err {T.rebuild_relerr[np.isfinite(T.rebuild_relerr)].max():.2e}")
 print("\nNOTE: Selection is conditional on the corrected N* (Nstar_trunc_exp) from a12. This is not an independent test of all possible cells.")
-print("\nNOTE: Parity ratios (N50/N*) are ~1.3-1.5 because parity is an IUT (both one-sided tests must reject).")
+print("\nNOTE: parity is an intersection-union test (both one-sided tests must reject), so power at N* is below 0.5 and N50/N* > 1 is expected. Observed range is printed below.")
 
 o = T[T.flag == "ok"]
 print("\nrebuild check (trunc_exp vs a12 column): max rel err",
@@ -88,6 +95,8 @@ rates = o.groupby(["kind", "tau"]).agg(
     med_ratio=("ratio", "median"), med_trunc_exp=("ratio_trunc_exp", "median"))
 print("\nflag counts (all rows) next to pass rates (flag=ok rows ONLY; censored rows are excluded from every rate):")
 print(pd.concat([flags, rates], axis=1).round(2))
+pr = o[o.kind == "par"].ratio_trunc_exp
+print(f"parity N50/N*_trunc_exp over {len(pr)} ok rows: " + (f"min {pr.min():.2f}, median {pr.median():.2f}, max {pr.max():.2f}" if len(pr) else "none"))
 d_all = T.groupby(["kind", "tau"]).sfc.nunique().rename("distinct_all")
 d_pass = o[o.ok_trunc_exp].groupby(["kind", "tau"]).sfc.nunique().rename("distinct_pass")
 d_fail = o[~o.ok_trunc_exp].groupby(["kind", "tau"]).sfc.nunique().rename("distinct_fail")

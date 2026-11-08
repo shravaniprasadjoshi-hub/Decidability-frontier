@@ -1,9 +1,9 @@
 """plot_e3.py: E3 frontier figures from a12 CSVs (+ optional faithful-Holm panel from b8b npz logs).
 
-Run from repo root:  python "smoke tests/plot_e3.py" ["smoke tests/results"]     (arg = folder holding the files; default 'smoke tests/results')
+Run from repo root:  python "smoke tests/plot_e3.py" ["smoke tests/results" [seed:flip ...]]   (default arms 0:123 1:456 2:789 3:321)
 Reads : a12_controlled_CA_<seed>_<flip>.csv   (needs the *_exp columns, i.e. patched a12)
         zlog_CA_<seed>_<flip>_<cfg>_g<gamma>_N<N>_tau<tau>.npz   (b8b output; optional, Fig 3 skipped if none)
-Writes: figs/e3_fig1_frac_certifiable.png, e3_fig2_tau_curves.png, e3_fig3_holm_power.png, e3_summary.csv, e3_holm_power_<exp|real>.csv
+Writes: figs/e3_fig1_frac_certifiable.png, e3_fig2_tau_curves.png, e3_fig3_holm_power_<exp|real>.png, e3_summary.csv, e3_holm_power_<exp|real>.csv
 Env: DENOM=exp (default; d*_exp > delta defines certifiable cells in Fig 3) | real (realized-draw d*, as b8b used)
 
 Each (seed, flip) is its own arm: thin line per arm, thick = mean across arms. Do NOT pool counts across arms.
@@ -12,7 +12,7 @@ N=inf uses expected-count pool quantities (tau_*_min0_exp); finite N uses expect
 ('unc' z=1.645; 'bon' = Bonferroni-2K z, a conservative ENVELOPE, not Holm's operating point; Holm is Fig 3).
 Parity at tau is certifiable iff tau_par_min < tau; disparity iff tau_disp_max > tau.
 """
-import sys, os, re, glob
+import sys, os, glob, json
 import numpy as np, pandas as pd
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -22,16 +22,18 @@ OUT = os.path.join(D, "figs"); os.makedirs(OUT, exist_ok=True)
 TAUS = [0.05, 0.02]
 
 # ---------- load arms ----------
+ARMS_WANTED = [tuple(int(x) for x in a.split(":")) for a in sys.argv[2:]] or [(0, 123), (1, 456), (2, 789), (3, 321)]
 arms = {}
-for f in sorted(glob.glob(os.path.join(D, "a12_controlled_CA_*_*.csv"))):
-    m = re.search(r"CA_(\d+)_(\d+)\.csv$", f)
-    if not m: continue
+for seed, flip in ARMS_WANTED:
+    f = os.path.join(D, f"a12_controlled_CA_{seed}_{flip}.csv")
+    assert os.path.exists(f), f"missing a12 arm {f}"
     d = pd.read_csv(f)
-    if "tau_par_min0_exp" not in d.columns:
-        print(f"skip {f}: no *_exp columns (unpatched a12)"); continue
-    arms[(int(m[1]), int(m[2]))] = d
-assert arms, f"no patched a12 CSVs in {D}"
-print("arms:", list(arms), "| git:", {k: v.git.iloc[0] for k, v in arms.items()})
+    assert "tau_par_min0_exp" in d.columns, f"{f}: no *_exp columns (unpatched a12)"
+    arms[(seed, flip)] = d
+gits = {k: v.git.iloc[0] for k, v in arms.items()}
+assert len(set(gits.values())) == 1 and not any("dirty" in g for g in gits.values()), f"a12 arms from different or dirty commits: {gits}"
+A12_GIT = next(iter(gits.values()))
+print("arms:", list(arms), "| git:", A12_GIT)
 
 # ---------- series: fraction of cells certifiable, per arm per gamma ----------
 def series(d):
@@ -106,17 +108,20 @@ def holm_rej(p, a):
         else: break
     return rej
 
-recs = []; warn = set(); found = {}
+recs = []; found = {}
 for (seed, flip), d in arms.items():
     for g, x in d.groupby("gamma"):
         dl = x.delta_shared.iloc[0]
         for N in (5000, 20000):
             for t in TAUS:
-                fs = sorted(glob.glob(os.path.join(D, f"zlog_CA_{seed}_{flip}_*_g{g}_N{N}_tau{t}.npz")), key=os.path.getmtime)
+                fs = sorted(glob.glob(os.path.join(D, f"zlog_CA_{seed}_{flip}_*_g{g}_N{N}_tau{t}.npz")))
                 if not fs: continue
+                assert len(fs) == 1, f"several zlogs for arm {(seed, flip)} g{g} N{N} tau{t}; delete the stale ones: {fs}"
                 found[(seed, flip)] = found.get((seed, flip), 0) + 1
-                if len(fs) > 1: warn.add((seed, flip))
-                z = np.load(fs[-1], allow_pickle=True); A = z["z"]; K = int(z["K"]); cells = list(z["cells"])
+                z = np.load(fs[0], allow_pickle=True); A = z["z"]; K = int(z["K"]); cells = list(z["cells"])
+                zc, zg = json.loads(str(z["cfg"])), str(z["git"])
+                assert zg == A12_GIT, f"{fs[0]}: zlog git {zg} != a12 git {A12_GIT}; rerun b8b at the a12 commit"
+                assert zc["seed"] == seed and zc["flip_seed"] == flip, f"{fs[0]}: cfg belongs to another arm"
                 pv = A[:, 4 * K:]                                    # rows: [dlo,dhi,slo,shi (4K), pv (2K)]
                 idx = np.array([cells.index(c) for c in x.cell])     # align to a12 order
                 dok = (x[f"d*_disp@{t}{SUF}"].values > dl); pok = (x[f"d*_par@{t}{SUF}"].values > dl)
@@ -156,7 +161,6 @@ if recs:
     axs[0, 0].legend(fontsize=7); axs[0, 0].set_ylabel("rejection rate"); axs[1, 0].set_ylabel("rejection rate")
     fig.suptitle(f"E3: power, uncorrected vs Holm(2K); thin = arm, thick = mean of {n_arms} arms; denominator = d*>delta ({DENOM} counts); hollow = <5 certifiable cells", fontsize=9)
     fig.tight_layout(); fig.savefig(os.path.join(OUT, f"e3_fig3_holm_power_{DENOM}.png"), dpi=150); plt.close(fig)
-    if warn: print("WARNING: several npz cfg hashes for", sorted(warn), "-> used the newest; delete stale zlogs if unsure")
 else:
     print("no zlog npz found -> Fig 3 skipped")
 print("wrote figs to", OUT)
