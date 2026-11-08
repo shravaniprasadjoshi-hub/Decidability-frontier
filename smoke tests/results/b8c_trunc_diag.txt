@@ -6,8 +6,6 @@ done smoke tests/results\b8c_crossover_CA_1_456_g0.02.csv
 done smoke tests/results\b8c_crossover_CA_1_456_g0.03.csv
 done smoke tests/results\b8c_crossover_CA_1_456_g0.04.csv
 done smoke tests/results\b8c_crossover_CA_1_456_g0.05.csv
-done smoke tests/results\b8c_crossover_CA_2_456_g0.02.csv
-done smoke tests/results\b8c_crossover_CA_2_456_g0.04.csv
 done smoke tests/results\b8c_crossover_CA_2_789_g0.02.csv
 done smoke tests/results\b8c_crossover_CA_2_789_g0.03.csv
 done smoke tests/results\b8c_crossover_CA_2_789_g0.04.csv
@@ -19,26 +17,27 @@ rebuild check (closed form vs CSV Nstar): max rel err 2.22e-16
 
 NOTE: Selection is conditional on the corrected N* (Nstar_trunc_exp) from a12. This is not an independent test of all possible cells.
 
-NOTE: Parity ratios (N50/N*) are ~1.3-1.5 because parity is an IUT (both one-sided tests must reject).
+NOTE: parity is an intersection-union test (both one-sided tests must reject), so power at N* is below 0.5 and N50/N* > 1 is expected. Observed range is printed below.
 
 rebuild check (trunc_exp vs a12 column): max rel err 2.220446049250313e-16
 
 flag counts (all rows) next to pass rates (flag=ok rows ONLY; censored rows are excluded from every rate):
            rows   ok  left  right  nan  definite_fail  orig  trunc   exp  \
 kind tau                                                                   
-disp 0.02   116  113     0      3    0              0  0.83   0.96  0.94   
-     0.05    70   68     0      2    0              0  0.82   0.96  0.88   
-par  0.05    21   18     0      3    0              0  0.89   0.89  1.00   
+disp 0.02   102  100     0      2    0              0  0.83   0.96  0.93   
+     0.05    59   58     0      1    0              0  0.84   0.95  0.90   
+par  0.05    17   16     0      1    0              0  0.88   0.88  1.00   
 
            trunc_exp  med_ratio  med_trunc_exp  
 kind tau                                        
-disp 0.02        1.0       1.29           1.00  
-     0.05        1.0       1.43           0.98  
+disp 0.02        1.0       1.28           1.00  
+     0.05        1.0       1.40           0.98  
 par  0.05        1.0       1.27           1.42  
+parity N50/N*_trunc_exp over 16 ok rows: min 1.00, median 1.42, max 1.67
 
 distinct (seed, flip, cell) per group; rows share RNG streams across gamma and repeat across tau, so do not treat rows as independent:
            distinct_all  distinct_pass  distinct_fail
 kind tau                                             
-disp 0.02            52             51              0
-     0.05            30             30              0
-par  0.05            17             14              0
+disp 0.02            43             43              0
+     0.05            23             23              0
+par  0.05            13             12              0
