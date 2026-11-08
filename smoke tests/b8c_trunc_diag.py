@@ -92,7 +92,8 @@ flags = T.groupby(["kind", "tau"]).agg(
     definite_fail=("definite_fail", "sum"))
 rates = o.groupby(["kind", "tau"]).agg(
     orig=("ok", "mean"), trunc=("ok_trunc", "mean"), exp=("ok_exp", "mean"), trunc_exp=("ok_trunc_exp", "mean"),
-    med_ratio=("ratio", "median"), med_trunc_exp=("ratio_trunc_exp", "median"))
+    med_ratio=("ratio", "median"), med_trunc_exp=("ratio_trunc_exp", "median"),
+    min_trunc_exp=("ratio_trunc_exp", "min"), max_trunc_exp=("ratio_trunc_exp", "max"))
 print("\nflag counts (all rows) next to pass rates (flag=ok rows ONLY; censored rows are excluded from every rate):")
 print(pd.concat([flags, rates], axis=1).round(2))
 pr = o[o.kind == "par"].ratio_trunc_exp
@@ -102,3 +103,12 @@ d_pass = o[o.ok_trunc_exp].groupby(["kind", "tau"]).sfc.nunique().rename("distin
 d_fail = o[~o.ok_trunc_exp].groupby(["kind", "tau"]).sfc.nunique().rename("distinct_fail")
 print("\ndistinct (seed, flip, cell) per group; rows share RNG streams across gamma and repeat across tau, so do not treat rows as independent:")
 print(pd.concat([d_all, d_pass, d_fail], axis=1).fillna(0).astype(int))
+
+print("\n=== per-arm split; (3, 321) is the confirmatory arm (corrections were fit on seeds 0-2) ===")
+for (s_, f_), Ta in T.groupby(["seed", "flip"]):
+    oa = Ta[Ta.flag == "ok"]
+    print(f"\narm ({s_},{f_}): rows {len(Ta)}, ok {len(oa)}, left {(Ta.flag == 'left-censored').sum()}, right {(Ta.flag == 'right-censored').sum()}, nan {(Ta.flag == 'nan').sum()}, gammas {sorted(Ta.gamma.unique())}")
+    print(oa.groupby(["kind", "tau"]).agg(n_ok=("ok_trunc_exp", "size"), pass_trunc_exp=("ok_trunc_exp", "mean"), pass_orig=("ok", "mean"),
+          med=("ratio_trunc_exp", "median"), lo=("ratio_trunc_exp", "min"), hi=("ratio_trunc_exp", "max")).round(2))
+print("\nright-censored rows:")
+print(T[T.flag == "right-censored"][["seed", "flip", "gamma", "tau", "kind", "cell", "Nstar_trunc_exp", "N50"]].to_string(index=False))
