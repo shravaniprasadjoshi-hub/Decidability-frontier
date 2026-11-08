@@ -4,4 +4,6 @@ data/
 smoke tests/data/
 # tracked results
 smoke tests/results/
+smoke tests/results/old/
 run_e3_E4.bat
+smoke tests/results/figs/*.png
