@@ -7,3 +7,9 @@ smoke tests/results/
 smoke tests/results/old/
 run_e3_E4.bat
 smoke tests/results/figs/*.png
+# regenerable
+*.csv
+*.json
+*.npz
+# root-level results/ stays ignored
+/results/
