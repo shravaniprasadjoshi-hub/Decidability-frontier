@@ -9,3 +9,6 @@ smoke tests/results/b8a_coverage_*.csv
 smoke tests/results/*.png
 smoke tests/results/e1_*
 smoke tests/results/b8a_coverage_*.csv
+*.npz
+# root-level results/ stays ignored
+/results/
