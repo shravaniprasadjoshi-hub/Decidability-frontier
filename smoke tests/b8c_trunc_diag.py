@@ -58,7 +58,7 @@ for f in sorted(glob.glob(f"smoke tests/results/b8c_crossover_{STATE}_*_g*.csv")
                         Nstar_trunc=nt, Nstar_exp=nstar_cf(c, r.kind, r.tau, True), 
                         Nstar_trunc_exp=nte, N50=r.N50, flag=r.flag,
                         n_pool=n, rebuild_relerr_trunc=chk,
-                        git=GIT, cfg_hash=cfg_hash))
+                        git=GIT, cfg_hash=cfg_hash, b8c_git=d["git"].iloc[0], a12_git=d["a12_git"].iloc[0]))
     print("done", f)
 
 assert len(in_gits) == 1 and in_gits == a12_gits, f"inputs come from different commits: b8c {sorted(in_gits)}, a12 {sorted(a12_gits)}"

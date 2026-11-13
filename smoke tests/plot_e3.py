@@ -51,7 +51,7 @@ def series(d):
     return pd.DataFrame(rows).sort_values("delta")
 
 S = {k: series(d) for k, d in arms.items()}
-pd.concat([s.assign(seed=k[0], flip=k[1]) for k, s in S.items()]).to_csv(os.path.join(OUT, "e3_summary.csv"), index=False)
+pd.concat([s.assign(seed=k[0], flip=k[1], a12_git=A12_GIT) for k, s in S.items()]).to_csv(os.path.join(OUT, "e3_summary.csv"), index=False)
 
 STY = {"inf": ("k", "-", "N=inf (expected counts)"), "unc20k": ("C0", "-", "N=20k, z=1.645"),
        "bon20k": ("C3", "--", "N=20k, Bonferroni-2K (envelope)"), "unc5k": ("C2", ":", "N=5k, z=1.645")}
@@ -128,7 +128,7 @@ for (seed, flip), d in arms.items():
                 H = np.array([holm_rej(r, 0.05) for r in pv]); U = pv <= 0.05
                 for kind, ok, off in [("disp", dok, 0), ("par", pok, K)]:
                     sel = idx[ok] + off
-                    recs.append(dict(seed=seed, flip=flip, gamma=g, delta=dl, N=N, tau=t, kind=kind, n_cert=len(sel), R=len(pv),
+                    recs.append(dict(seed=seed, flip=flip, gamma=g, delta=dl, N=N, tau=t, kind=kind, n_cert=len(sel), R=len(pv), a12_git=A12_GIT, zlog_git=zg,
                                      unc=U[:, sel].mean() if len(sel) else np.nan, holm=H[:, sel].mean() if len(sel) else np.nan))
 print("npz files used per arm:", found, "| missing arms:", [k for k in arms if k not in found])
 if recs:

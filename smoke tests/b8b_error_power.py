@@ -2,7 +2,7 @@
 B8b: audit-level error control + power on the controlled-Delta arm (A12 setup).
 
 usage from repo root:
-    set PYTHONPATH=.;core
+    bash: export PYTHONPATH=.:core   |   cmd: set PYTHONPATH=.;core
     python "smoke tests/b8b_error_power.py"
 
 Env: STATE (CA), SEED (0), FLIP_SEED (123), R (reps, 300), SYNTH=1
