@@ -1,0 +1,48 @@
+git=2b8aaa52c1
+gamma=0.02 oracle delta=0.024 R=200 K=31 M_MIN=10
+N=5000 done
+N=10000 done
+N=20000 done
+N=35000 done
+N=50000 done
+N=75000 done
+N=100000 done
+N=150000 done
+N=195665 done
+ tau kind        cell     Nstar  Nstar_trunc_exp       N50 flag  ratio   ok  definite_fail
+0.05 disp 1.0|O|30-44  22305.62         36030.73  32952.98   ok   0.91 True          False
+0.05 disp 1.0|W|30-44  30205.68         34244.63  34411.47   ok   1.00 True          False
+0.05 disp   1.0|W|<30   4497.45          6235.87   6274.56   ok   1.01 True          False
+0.05 disp 2.0|B|30-44  30774.31         47655.78  44180.28   ok   0.93 True          False
+0.05 disp   2.0|B|60+  48719.86        138613.46 135941.06   ok   0.98 True          False
+0.05  par 1.0|A|45-59 296667.78        142182.34 195665.00   ok   1.38 True          False
+0.05  par 2.0|O|30-44  61341.71         89974.91 128531.29   ok   1.43 True          False
+0.05  par 2.0|W|45-59  56600.68         55508.18  73359.49   ok   1.32 True          False
+0.02 disp   1.0|A|<30  55146.02         97105.12  94903.86   ok   0.98 True          False
+0.02 disp 1.0|O|30-44   7197.85         17682.61  19283.52   ok   1.09 True          False
+0.02 disp 1.0|W|30-44   7298.79          8247.82   8312.38   ok   1.01 True          False
+0.02 disp   1.0|W|60+ 149895.67        192898.33 186700.11   ok   0.97 True          False
+0.02 disp 2.0|B|30-44  16776.41         21126.53  26174.31   ok   1.24 True          False
+0.02 disp 2.0|B|45-59 158537.97         73417.50  75774.55   ok   1.03 True          False
+0.02 disp   2.0|B|60+  24804.23        138613.46 131037.07   ok   0.95 True          False
+0.02 disp   2.0|B|<30  78665.16         94667.72  82893.07   ok   0.88 True          False
+0.02 disp 2.0|O|45-59 121637.26        183336.10 170237.04   ok   0.93 True          False
+0.02 disp 2.0|W|30-44  38033.58         33385.07  33360.78   ok   1.00 True          False
+
+Flag counts by kind/tau:
+            n  ok_flag  left  right  nan
+tau  kind                               
+0.02 disp  10       10     0      0    0
+0.05 disp   5        5     0      0    0
+     par    3        3     0      0    0
+
+Distinct cells passing 2x rule (one seed/flip/gamma run; cells repeat across tau, so rows are not independent):
+           distinct_cells
+kind tau                 
+disp 0.02              10
+     0.05               5
+par  0.05               3
+
+NOTE: parity is an intersection-union test (both one-sided tests must reject), so power at N* is below 0.5 and N50/N* > 1 is expected. Observed N50/N* over 3 ok parity rows: min 1.32, median 1.38, max 1.43.
+
+definite fails (right-censored, N* < pool/2): 0 (pool/2 = 97832)

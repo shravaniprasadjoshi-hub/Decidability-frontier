@@ -1,6 +1,6 @@
-"""Run: pytest -q test_bounds.py"""
+"""Run from repo root: PYTHONPATH=core pytest -q tests/test_bounds.py"""
 import numpy as np, pytest
-from bounds import Cell, endpoints, clipped_bounds, gap, verdict, breakdown, bonferroni_z
+from bounds import Cell, endpoints, breakdown, clipped_bounds, verdict, gap, bonferroni_z, nstar_trunc_exp, NGRID, _scaled, _nstar_from_ok, definite_fail
 
 
 def cell_from(n, w, pi, mu):
@@ -128,3 +128,66 @@ def test_se_matches_empirical_sd_and_between_term_matters():
     sd = np.std(L)
     assert np.mean(se_b) / sd == pytest.approx(1.0, abs=0.06)
     assert np.mean(se_nb) / sd < 0.94          # old se (fixed weights) must be visibly too small here
+
+def _ok_grid(g, ref, delta, tau, kind, n_pool, z=1.645, m_min=10):
+    want = "disparity" if kind == "disp" else "parity"
+    return np.array([verdict(_scaled(g, N / n_pool), _scaled(ref, N / n_pool), delta, tau, z, m_min) == want for N in NGRID])
+
+
+def test_nstar_finite_disparity():
+    g, ref = Cell([1000], [500], [200]), Cell([4000], [3000], [600])
+    ns = nstar_trunc_exp(g, ref, 0.02, 0.15, "disp", 1.645, 10, 5000)
+    assert np.isfinite(ns) and ns > NGRID[0]
+    ok = _ok_grid(g, ref, 0.02, 0.15, "disp", 5000); i = int(np.searchsorted(NGRID, ns))
+    assert i > 0 and ok[i:].all() and not ok[i - 1]                 # holds from i on, fails just before
+    r = gap(g, ref, 0.02, 0.0, 10)
+    assert ns == pytest.approx(5000 * (1.645 * r["se_lo"] / (r["lo"] - 0.15)) ** 2, rel=0.08)   # closed form, ~5.9k
+
+
+def test_nstar_finite_parity():
+    g, ref = Cell([1000], [700], [140]), Cell([4000], [3200], [640])
+    ns = nstar_trunc_exp(g, ref, 0.01, 0.05, "par", 1.645, 10, 5000)
+    assert np.isfinite(ns) and ns > NGRID[0]
+    ok = _ok_grid(g, ref, 0.01, 0.05, "par", 5000); i = int(np.searchsorted(NGRID, ns))
+    assert i > 0 and ok[i:].all() and not ok[i - 1]
+    r = gap(g, ref, 0.01, 0.0, 10)
+    cf = 5000 * (1.645 * max(r["se_hi"] / (0.05 - r["hi"]), r["se_lo"] / (0.05 + r["lo"]))) ** 2   # ~1.9k
+    assert ns == pytest.approx(cf, rel=0.08)
+
+
+def test_nstar_never_holds_is_inf():
+    g, ref = Cell([1000], [500], [100]), Cell([4000], [2000], [400])   # identical mu = 0.2 => no disparity at any N
+    assert nstar_trunc_exp(g, ref, 0.02, 0.05, "disp", 1.645, 10, 5000) == np.inf
+    assert not _ok_grid(g, ref, 0.02, 0.05, "disp", 5000).any()
+
+
+def test_nstar_holds_everywhere_is_grid_start():
+    g, ref = Cell([20000], [10000], [6000]), Cell([80000], [70000], [7000])
+    assert nstar_trunc_exp(g, ref, 0.01, 0.05, "disp", 1.645, 10, 100000) == float(NGRID[0])
+    assert _ok_grid(g, ref, 0.01, 0.05, "disp", 100000).all()
+
+
+def test_nstar_from_ok_non_monotone():
+    ok = np.ones(len(NGRID), bool); ok[:3] = False; ok[10] = False     # first holds at idx 3, but fails again at idx 10
+    assert _nstar_from_ok(ok) == float(NGRID[11])                       # "last failure + 1", not "first success"
+    assert _nstar_from_ok(np.zeros(len(NGRID), bool)) == np.inf
+    ok2 = np.ones(len(NGRID), bool); ok2[-1] = False
+    assert _nstar_from_ok(ok2) == np.inf # fails at the largest N
+
+def test_nstar_trunc_exp_non_monotone_through_the_function(monkeypatch):
+    """Exercises nstar_trunc_exp's own loop with a scripted non-monotone verdict (holds at idx 3, fails again at idx 10)."""
+    import bounds
+    pattern = np.ones(len(NGRID), bool); pattern[:3] = False; pattern[10] = False
+    it = iter(range(len(NGRID)))
+    monkeypatch.setattr(bounds, "verdict", lambda *a, **k: "disparity" if pattern[next(it)] else "undecided")
+    g = Cell([1000], [500], [200])
+    assert bounds.nstar_trunc_exp(g, g, 0.02, 0.05, "disp", 1.645, 10, 5000) == float(NGRID[11])
+
+
+def test_definite_fail():
+    n = 195665
+    assert definite_fail("right-censored", 50_000, n)            # 2x window [25k, 100k] fits in the grid, so the miss is certain
+    assert not definite_fail("right-censored", 120_000, n)        # N* >= n/2: miss not certain
+    assert not definite_fail("right-censored", n / 2, n)          # boundary is strict <
+    for flag in ("ok", "left-censored", "nan"):
+        assert not definite_fail(flag, 50_000, n)

@@ -106,3 +106,30 @@ def breakdown(g, ref, tau, z=0.0, m_min=1, delta_ref=0.0, between=True):
 def bonferroni_z(alpha, K):
     """One-sided critical value at level alpha/K (baseline multiplicity; Holm/max-t are upgrades, not implemented)."""
     return NormalDist().inv_cdf(1 - alpha / K)
+
+# N* for a cell vs ref at audit size N (single implementation)
+NGRID = np.geomspace(1_000, 2_000_000, 300)      # ~2.5% step; inf if the verdict never holds on the grid
+
+def _scaled(c, f):
+    return Cell(c.n_j * f, c.na_j * f, c.k_j * f)
+
+
+def _nstar_from_ok(ok):
+    """Smallest grid N from which ok holds for ALL larger N; inf if it fails at the largest N."""
+    bad = np.flatnonzero(~np.asarray(ok))
+    if len(bad) == 0: return float(NGRID[0])
+    return np.inf if bad[-1] == len(NGRID) - 1 else float(NGRID[bad[-1] + 1])
+
+def definite_fail(flag, nstar_corrected, n_max):
+    """Right-censored although the 2x window [N*/2, 2N*] fits inside the N grid, so the miss is certain.
+    Uses the CORRECTED N* (Nstar_trunc_exp). Left-censored and nan rows are never definite fails."""
+    return bool(flag == "right-censored" and nstar_corrected < n_max / 2)
+
+
+def nstar_trunc_exp(g, ref, delta, tau, kind, z, m_min, n_pool):
+    """Smallest N on NGRID from which the z-certificate holds for ALL larger N. g/ref hold the pool's EXPECTED counts,
+    scaled by N/n_pool, m_min truncation applied. Validated at z=1.645 only. 'Last failure + 1' differs from
+    first-crossing N when the verdict is non-monotone in N (m_min truncation)."""
+    want = "disparity" if kind == "disp" else "parity"
+    ok = np.array([verdict(_scaled(g, N / n_pool), _scaled(ref, N / n_pool), delta, tau, z, m_min) == want for N in NGRID])
+    return _nstar_from_ok(ok)
