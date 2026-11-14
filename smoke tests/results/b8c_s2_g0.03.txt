@@ -1,0 +1,42 @@
+git=2b8aaa52c1
+gamma=0.03 oracle delta=0.037 R=200 K=31 M_MIN=10
+N=5000 done
+N=10000 done
+N=20000 done
+N=35000 done
+N=50000 done
+N=75000 done
+N=100000 done
+N=150000 done
+N=195665 done
+ tau kind        cell     Nstar  Nstar_trunc_exp       N50           flag  ratio    ok  definite_fail
+0.05 disp 1.0|A|45-59 431451.78        178734.24       inf right-censored    inf False          False
+0.05 disp   1.0|W|60+   8397.19          9130.62   9836.32             ok   1.08  True          False
+0.05 disp   2.0|A|<30  15602.42         19575.25  19418.70             ok   0.99  True          False
+0.05 disp   2.0|O|60+  23975.95         43048.17  44985.56             ok   1.05  True          False
+0.05 disp 2.0|W|30-44  49747.61         75307.77  80436.24             ok   1.07  True          False
+0.05  par 1.0|O|30-44 193695.49         97105.12 141558.31             ok   1.46  True          False
+0.05  par   2.0|W|<30 133051.20        116017.57 164751.13             ok   1.42  True          False
+0.02 disp 1.0|A|45-59  37450.45         29400.26  25968.55             ok   0.88  True          False
+0.02 disp   2.0|A|<30   7763.56          8901.44   9581.16             ok   1.08  True          False
+0.02 disp 2.0|O|30-44  81821.95         69778.09  61666.84             ok   0.88  True          False
+0.02 disp   2.0|O|60+  13893.53         24607.61  27197.55             ok   1.11  True          False
+0.02 disp 2.0|W|30-44   9308.21         11773.42  11780.20             ok   1.00  True          False
+
+Flag counts by kind/tau:
+           n  ok_flag  left  right  nan
+tau  kind                              
+0.02 disp  5        5     0      0    0
+0.05 disp  5        4     0      1    0
+     par   2        2     0      0    0
+
+Distinct cells passing 2x rule (one seed/flip/gamma run; cells repeat across tau, so rows are not independent):
+           distinct_cells
+kind tau                 
+disp 0.02               5
+     0.05               4
+par  0.05               2
+
+NOTE: parity is an intersection-union test (both one-sided tests must reject), so power at N* is below 0.5 and N50/N* > 1 is expected. Observed N50/N* over 2 ok parity rows: min 1.42, median 1.44, max 1.46.
+
+definite fails (right-censored, N* < pool/2): 0 (pool/2 = 97832)

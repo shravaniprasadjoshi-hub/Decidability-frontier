@@ -1,0 +1,36 @@
+git=2b8aaa52c1
+gamma=0.05 oracle delta=0.061 R=200 K=31 M_MIN=10
+N=5000 done
+N=10000 done
+N=20000 done
+N=35000 done
+N=50000 done
+N=75000 done
+N=100000 done
+N=150000 done
+N=195665 done
+ tau kind        cell     Nstar  Nstar_trunc_exp      N50 flag  ratio   ok  definite_fail
+0.05 disp   1.0|W|60+  27822.81         27942.85 30845.26   ok   1.10 True          False
+0.05 disp   2.0|A|<30  27642.30         40914.21 38064.10   ok   0.93 True          False
+0.05 disp   2.0|O|60+  35715.00         85514.74 83686.80   ok   0.98 True          False
+0.02 disp 1.0|A|45-59 153636.46         81275.66 74110.90   ok   0.91 True          False
+0.02 disp   1.0|W|60+   7532.25          8460.18  8908.99   ok   1.05 True          False
+0.02 disp   2.0|A|<30  11466.56         14066.44 13886.51   ok   0.99 True          False
+0.02 disp   2.0|O|60+  18801.93         30933.68 34225.24   ok   1.11 True          False
+0.02 disp 2.0|W|30-44  24331.14         35126.33 37887.04   ok   1.08 True          False
+
+Flag counts by kind/tau:
+           n  ok_flag  left  right  nan
+tau  kind                              
+0.02 disp  5        5     0      0    0
+0.05 disp  3        3     0      0    0
+
+Distinct cells passing 2x rule (one seed/flip/gamma run; cells repeat across tau, so rows are not independent):
+           distinct_cells
+kind tau                 
+disp 0.02               5
+     0.05               3
+
+NOTE: parity is an intersection-union test (both one-sided tests must reject), so power at N* is below 0.5 and N50/N* > 1 is expected. No ok parity rows.
+
+definite fails (right-censored, N* < pool/2): 0 (pool/2 = 97832)
