@@ -83,10 +83,17 @@ def build(state="CA", seed=0, flip_seed=None, grid=GRID, year="2018", noise_sd=N
     def strata(Jx): return np.digitize(p, np.quantile(p, np.linspace(0, 1, Jx + 1)[1:-1]))
     base = (lambda s: (s - s.mean()) / s.std())(strata(J_SEL).astype(float))
 
-    def select(gamma, eps=eps0):
-        """D and the TRUE propensity P(D=1|X,Y) = Phi((q - base - gamma r)/noise_sd), q = realized approval threshold."""
-        lat = base + gamma * r + noise_sd * eps; q = np.quantile(lat, APPROVAL)
-        return (lat <= q).astype(int), ndtr((q - base - gamma * r) / noise_sd)
+    def select(gamma, eps=eps0, selection_noise_sd=None):
+        """D and the TRUE propensity P(D=1|X,Y).
+
+        ``selection_noise_sd`` changes only the selection-noise scale while
+        retaining the same fitted score/data stream. It is used by E5 so noise
+        sensitivity does not needlessly refit a new score model.
+        """
+        sd = noise_sd if selection_noise_sd is None else float(selection_noise_sd)
+        if sd <= 0: raise ValueError("selection_noise_sd must be positive")
+        lat = base + gamma * r + sd * eps; q = np.quantile(lat, APPROVAL)
+        return (lat <= q).astype(int), ndtr((q - base - gamma * r) / sd)
 
     def grouped(key, size, D, prop):
         bc = lambda m, w=None: np.bincount(key[m], weights=None if w is None else w[m], minlength=size)

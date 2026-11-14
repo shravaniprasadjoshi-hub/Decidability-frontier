@@ -6,7 +6,8 @@ Modes:
       Assumed delta = max|d_j| of the profile (valid sensitivity parameter). Truth is placed ON the lower endpoint
       (and separately on the upper one), i.e. the worst case for coverage. 'ctrl' = same profile with mu_obs clipped to
       [0.15, 0.85], which moves strata away from both clip points (delta and 1-delta) and leaves the rest alone."""
-import numpy as np, itertools, sys
+import hashlib, itertools, json, os, subprocess, sys
+import numpy as np
 rng = np.random.default_rng(0)
 DELTA, Z, R = 0.03, 1.645, 2000   # additive delta, one-sided z, reps
 NS, JS = [50, 100, 200, 500, 2000, 10000], [1, 5, 20]
@@ -67,10 +68,13 @@ def adversarial_mode():
         r = one_setting(n, np.ones(J) / J, np.full(J, 0.3), np.full(J, DELTA), DELTA)
         print(f"{J:3d} {n:6d} | {r['cov_lo']:.3f}  {r['cov_hi']:.3f} | {r['b_lo']:+.2f}  {r['b_hi']:+.2f} | {r['width']:.3f}")
 
-def profile_mode(path, gammas):
+def profile_mode(path, gammas, artifact_out=None):
     import pandas as pd
     d0 = pd.read_csv(path)
     assert d0[["y_mode", "noise", "sel"]].drop_duplicates().shape[0] == 1, "CSV mixes y_mode/noise/sel: one regime per file"
+    profile_js = sorted(int(x) for x in d0.J.unique())
+    assert len(profile_js) == 1, "CSV mixes J values; pass a single J-profile CSV"
+    rows = []
     for g in (gammas or sorted(d0.gamma.unique())):
         d = d0[np.isclose(d0.gamma, g)].sort_values("j")
         w = d.n_j.values / d.n_j.sum(); pi = d.pi.values
@@ -86,8 +90,33 @@ def profile_mode(path, gammas):
             for name, m in [("profile", mu), ("ctrl", np.clip(mu, 0.15, 0.85))]:
                 r = one_setting(n, w, pi, m, delta)
                 print(f"{name:8s} {n:6d} | {r['cov_lo']:.3f}  {r['cov_hi']:.3f} | {r['b_lo']:+.2f}  {r['b_hi']:+.2f} | {r['width']:.3f} | {r['empty']:.2f}  {r['thin']:.1f}")
+                rows.append(dict(gamma=float(g), J=len(d), profile=name, n=n, delta=delta, **r))
+    if artifact_out:
+        cfg = dict(script="st1_kink_bias", profile_csv=os.path.abspath(path), j_profile=profile_js[0],
+                   gammas=[float(g) for g in (gammas or sorted(d0.gamma.unique()))], reps=R, ns=NS_PROF,
+                   between=BETWEEN)
+        try:
+            git = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()[:10]
+            dirty = bool(subprocess.check_output(["git", "status", "--porcelain", "--", "*.py", "*.yaml"], text=True).strip())
+            git += "+dirty" if dirty else ""
+        except Exception:
+            git = "nogit"
+        artifact = dict(kind="st1_profile_diagnostic", status="diagnostic-complete", j_profile=profile_js[0],
+                        profile_csv=os.path.abspath(path), profile_sha256=hashlib.sha256(open(path, "rb").read()).hexdigest(),
+                        git=git, cfg_hash=hashlib.sha1(json.dumps(cfg, sort_keys=True).encode()).hexdigest()[:8], rows=rows)
+        with open(artifact_out, "w") as f:
+            json.dump(artifact, f, indent=2)
+        print(f"saved diagnostic artifact {artifact_out}")
 
 if __name__ == "__main__":
-    if len(sys.argv) > 2 and sys.argv[1] == "profile": profile_mode(sys.argv[2], [float(x) for x in sys.argv[3:]])
+    if len(sys.argv) > 2 and sys.argv[1] == "profile":
+        args = sys.argv[3:]
+        artifact = None
+        if "--artifact-out" in args:
+            i = args.index("--artifact-out")
+            if i + 1 == len(args): raise ValueError("--artifact-out needs a JSON path")
+            artifact = args[i + 1]
+            args = args[:i] + args[i + 2:]
+        profile_mode(sys.argv[2], [float(x) for x in args], artifact)
     elif len(sys.argv) > 1 and sys.argv[1] == "adversarial": adversarial_mode()
     else: default_mode()

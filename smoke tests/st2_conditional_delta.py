@@ -1,7 +1,8 @@
 """ST2: conditional vs unconditional delta_true on Folktables with imposed selection.
 Run: pip install folktables scikit-learn pandas numpy ; python st2_conditional_delta.py
 Day-1-dependent choices are all in the CONFIG block."""
-import os, numpy as np, pandas as pd
+import hashlib, json, os, subprocess
+import numpy as np, pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier
 
 # ---------------- CONFIG ----------------
@@ -103,8 +104,21 @@ print("\n===== SUMMARY: ratio = |uncond gap| / max|d_j|;  gamma=0 rows are the b
 print(" gamma |  J | uncond | max|d_j| | w-mean|d_j| | ratio | strata used")
 for g, J, u, mx, wm, ra, k in summary: print(f" {g:5.2f} | {J:2d} | {u:+.3f} |  {mx:.3f}   |    {wm:.3f}     | {ra:5.1f} | {k}/{J}")
 
-pd.DataFrame(prof_rows).to_csv(f"profile_{Y_MODE}_{SELECTION}_noise{NOISE_SD}.csv", index=False)
-print(f"\nprofile CSV written: profile_{Y_MODE}_{SELECTION}_noise{NOISE_SD}.csv")
+try:
+    profile_git = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()[:10]
+    dirty = bool(subprocess.check_output(["git", "status", "--porcelain", "--", "*.py", "*.yaml"], text=True).strip())
+    profile_git += "+dirty" if dirty else ""
+except Exception:
+    profile_git = "nogit"
+profile_cfg = dict(script="st2_conditional_delta", state=STATE, year=YEAR, y_mode=Y_MODE, noise_sd=NOISE_SD,
+                   selection=SELECTION, j_profile=J_PROFILE, gammas=GAMMA_LIST, seed=SEED)
+profile_hash = hashlib.sha1(json.dumps(profile_cfg, sort_keys=True).encode()).hexdigest()[:8]
+profile = pd.DataFrame(prof_rows)
+profile["git"], profile["cfg_hash"] = profile_git, profile_hash
+profile_out = os.environ.get("PROFILE_OUT", f"smoke tests/results/st2_profile_{Y_MODE}_{SELECTION}_noise{NOISE_SD}_J{J_PROFILE}.csv")
+os.makedirs(os.path.dirname(profile_out) or ".", exist_ok=True)
+profile.to_csv(profile_out, index=False)
+print(f"\nprofile CSV written: {profile_out} (git={profile_git}, cfg={profile_hash})")
 print("\nCELL SIZES in an audit sample (independent of gamma)")
 for N in N_AUDIT_LIST:
     sz = cell.iloc[rng.choice(len(cell), N, replace=False)].value_counts().reindex(cell.unique(), fill_value=0)
