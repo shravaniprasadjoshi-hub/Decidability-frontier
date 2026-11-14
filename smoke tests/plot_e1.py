@@ -1,7 +1,7 @@
 """E1 coverage figures + pass-check table from the per-rep pooled CSV written by b8a_coverage.py.
 usage: python plot_e1.py STATE SEED M_MIN [--data-dir DIR] [--out DIR]
-reads  {data-dir}/b8a_pooled_{STATE}_{SEED}_m{M_MIN}_R*.csv  (default data-dir = this script's folder)
-writes {out}/e1_{STATE}_s{SEED}_m{M_MIN}_table.csv, _passcheck.csv, and figures per gamma (default out = {data-dir}/results)
+reads  {data-dir}/b8a_pooled_{STATE}_{SEED}_m{M_MIN}_R*.csv  (default data-dir = smoke tests/results)
+writes {out}/e1_{STATE}_s{SEED}_m{M_MIN}_passcheck.csv, _thinbins.csv and figures per gamma (default out = data-dir; all gitignored)
 """
 import argparse, glob, os
 import numpy as np, pandas as pd

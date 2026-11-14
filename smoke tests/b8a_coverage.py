@@ -2,7 +2,7 @@
 B8a: per-cell coverage of the identified-set ENDPOINTS, CLT margin (bounds.py) vs exact (Clopper-Pearson + union bound), natural cells.
 
 usage from repo root:
-    set PYTHONPATH=.;core
+    export PYTHONPATH=.:core        (Windows: set PYTHONPATH=.;core)
     python "smoke tests/b8a_coverage.py"
 
 Env: STATE (CA), SEED (0), R (reps, 1000), M_MIN (10), SYNTH=1 (offline logic test only)
@@ -29,7 +29,7 @@ NBINS = [0, 50, 100, 200, 500, 10**9]
 def _git():
     try:
         h = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-        dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip())
+        dirty = bool(subprocess.check_output(["git", "status", "--porcelain", "--", ".", ":(exclude)smoke tests/results"], text=True).strip())
         return h[:10] + ("+dirty" if dirty else "")
     except Exception:
         return "nogit"
@@ -151,7 +151,8 @@ for by in ("ng_bin", "nun_bin"):
                                  cell_reps=int(m.sum()), n_cells=d.c.nunique(), passes=bool(p_ >= 0.94)))
 os.makedirs("smoke tests/results", exist_ok=True)
 pooled_file = f"smoke tests/results/b8a_pooled_{STATE}_{SEED}_m{M_MIN}_R{R}.csv"
-pd.DataFrame(prow).to_csv(pooled_file, index=False)
+pooled = pd.DataFrame(prow); pooled["cfg_hash"], pooled["git"] = CFG_HASH, GIT
+pooled.to_csv(pooled_file, index=False)
 print(f"\nsaved {pooled_file} (per-rep pooled)")
 
 out = pd.concat(allrows).drop(columns=["ngbin", "nun2", "rep"], errors="ignore").groupby(["gamma", "N", "cell"]).mean(numeric_only=True)
