@@ -13,7 +13,7 @@ APPROVAL_RATE    = 0.60
 GAMMA_LIST       = [float(x) for x in os.environ.get("GAMMAS", "0,0.02,0.05,0.1").split(",")]  # hidden-confounding strengths to run; 0.0 gives the binning floor per J
 SELECTION        = os.environ.get("SELECTION", "stratum") # "score": approval uses the continuous score (floor from within-bin leakage); "stratum": approval depends on X only through J_SEL bins (delta_true = pure confounding for J >= J_SEL)
 J_SEL            = 5
-J_PROFILE        = 5        # J at which the per-stratum profile table is printed
+J_PROFILE        = int(os.environ.get("J_PROFILE", 5))  # J at which the per-stratum profile table is printed; use 10 for the E5 J=10 gate
 MIN_PER_SIDE     = 30       # min approved and min rejected in a stratum to compute its gap
 N_AUDIT_LIST     = [2000, 5000, 20000]  # audit-sample sizes used only for the cell-size check
 SMALL_CELL       = 100

@@ -2,7 +2,7 @@
 axes:
   - {name: y_threshold, values: [100000], _status: acked, _ref: D3 stress}
   - {name: tau,         values: [0.02],   _status: acked, _ref: A1}
-  - {name: m_min,       values: [1],      _status: acked, _ref: A3/B8c}     # 30 dropped: not in the acked doc
+  - {name: m_min,       values: [1, 30],  _status: acked, _ref: A3/B8c}     # primary remains 10; 1 and 30 are sensitivity arms
   - {name: noise_sd,    values: [0.5],    _status: acked, _ref: B6}         # delta_true ~2.1-2.8 x gamma there
   - {name: J,           values: [10],     _status: acked, _ref: A13, gate: "ST1 profile-mode kink check at J=10 first"}
   - {name: audit_n,     values: [5000],   _status: acked, _ref: D5}

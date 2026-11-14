@@ -20,10 +20,22 @@ pip install folktables scikit-learn pandas numpy scipy pytest
 | 6 | `a12_controlled_delta.py` | controlled-Delta arm (pool level): realized Delta, Dc, S, breakdowns | `a12_controlled_*.csv` |
 | 7 | `b8b_error_power.py` | any-wrong-certificate rate and power (none / Bonferroni / Holm) on the A12 arm | `b8b_*.csv` |
 | 8 | `b8c_n_sweep.py` | power vs audit N; margin vs z*se vs unexplored mass | `b8c_*_m{1,10}.csv` |
+| 9 | `e5_sensitivities.py` (Rohini) | δ-based robustness across noise, `m_min`, τ, and gated J=10 | `e5_sensitivities_*.csv` |
+| 10 | `e6_adversarial_kink.py` (Rohini) | appendix-only stress test at the clipping kink | `e6_adversarial_kink_*.csv` |
 
 Tests: `pytest test_bounds.py` (12; they check the code matches the writeup math)
 Env vars: `STATE` (CA), `SEED` (0), `FLIP_SEED` (123), `R` (reps), `GAMMA` (b8c), `M_MIN` (b8c, default 10)
 `common.py` has the shared setup (`build(...)`)
+
+## Rohini: E5/E6 status
+
+- **E5:** implemented, but real Folktables runs await ACS CA 2018 access. The
+  retained `e5_sensitivities_SYNTHETIC_*.csv` file is explicitly synthetic and
+  is for offline logic testing only. Real reporting requires seeds `(0,123)`,
+  `(1,456)`, and `(2,789)`. J=10 is disabled until the profile-mode ST1 gate is
+  reviewed; rerun with `J10_GATE_PASSED=1` only after that review.
+- **E6:** completed at seed 0 with 2,000 repetitions. It is an adversarial
+  appendix calculation and must not be framed as general undercoverage evidence.
 
 ## Findings so far (single state, seed, J = 5)
 - **ST1 kink:** no detectable undercoverage on Folktables profiles; the adversarial case (J >= 20, high rejection near the clip) does undercover. Footnote + appendix, not a contribution
