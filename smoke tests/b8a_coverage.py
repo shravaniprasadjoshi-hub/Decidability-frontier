@@ -2,10 +2,14 @@
 B8a: per-cell coverage of the identified-set ENDPOINTS, CLT margin (bounds.py) vs exact (Clopper-Pearson + union bound), natural cells.
 
 usage from repo root:
-    set PYTHONPATH=.;core
+    export PYTHONPATH=.:core        (Windows: set PYTHONPATH=.;core)
     python "smoke tests/b8a_coverage.py"
 
 Env: STATE (CA), SEED (0), R (reps, 1000), M_MIN (10), SYNTH=1 (offline logic test only)
+
+Outputs (smoke tests/results/):
+    b8a_pooled_{STATE}_{SEED}_m{M_MIN}_R{R}.csv     per-rep pooled coverage by n_g bin and nun bin, with rep-clustered MC-se (used by plot_e1.py; committed)
+    b8a_coverage_{STATE}_{SEED}_m{M_MIN}_R{R}.csv   per-cell means over reps (legacy; gitignored)
 """
 import os, numpy as np, pandas as pd
 from scipy.stats import beta
@@ -96,7 +100,8 @@ for g in GAMMAS:
         cd_ex = ((Le - Ue[:, [ref]]) > TAU) | ((Ue - Le[:, [ref]]) < -TAU)
         
         df = pd.DataFrame({
-            "cell": np.tile(names, R), "c": np.tile(np.arange(C), R), "ng": rec["ng"].ravel(), "nun": rec["nun"].ravel(),
+            "cell": np.tile(names, R), "c": np.tile(np.arange(C), R), "rep": np.repeat(np.arange(R), C),
+            "ng": rec["ng"].ravel(), "nun": rec["nun"].ravel(),
             "cL": ((L - Z * sL) <= Lt).ravel(), "cU": ((U + Z * sU) >= Ut).ravel(),
             "cL_nb": ((L - Z * rec["sL0"]) <= Lt).ravel(), "cU_nb": ((U + Z * rec["sU0"]) >= Ut).ravel(),
             "eL": (Le <= Lt).ravel(), "eU": (Ue >= Ut).ravel(),
@@ -121,9 +126,30 @@ for g in GAMMAS:
         print(f"--- gamma={g} N={N}: disparity-certificate rate (z={Z}, no multiplicity) by whether |Delta_true|<=tau (those are WRONG certs)")
         print(df.groupby("near").agg(cells=("c", "nunique"), clt=("cd_clt", "mean"), exact=("cd_ex", "mean")).round(3).to_string())
 
-out = pd.concat(allrows).drop(columns=["ngbin", "nun2"], errors="ignore").groupby(["gamma", "N", "cell"]).mean(numeric_only=True)
+# per-rep pooled coverage (spec bins), rep-clustered MC-se; this is the table plot_e1.py reads
+SPEC_BINS = [0, 50, 100, 200, 500, np.inf]
+big = pd.concat(allrows)
+big["ng_bin"] = pd.cut(big.ng, SPEC_BINS, right=False).astype(str)
+big["nun_bin"] = big.nun.clip(upper=2).astype(int).astype(str)      # 0 = clean, 1, 2+
+ARMS = {"clt_comp": ("cL", "cU"), "clt_nocomp": ("cL_nb", "cU_nb"), "exact": ("eL", "eU")}
+prow = []
+for by in ("ng_bin", "nun_bin"):
+    for (g_, N_, lvl), d in big.groupby(["gamma", "N", by]):
+        for arm, cols in ARMS.items():
+            for ep, col in zip(("lower", "upper"), cols):
+                s, m = d.groupby("rep")[col].sum(), d.groupby("rep")[col].count()
+                p_ = s.sum() / m.sum(); se = np.sqrt(((s - p_ * m) ** 2).sum()) / m.sum()   # rep-clustered MC-se
+                prow.append(dict(gamma=g_, N=N_, group=by, level=lvl, arm=arm, endpoint=ep, cov=p_, mc_se=se,
+                                 cell_reps=int(m.sum()), n_cells=d.c.nunique(), passes=bool(p_ >= 0.94)))
+os.makedirs("smoke tests/results", exist_ok=True)
+pooled_file = f"smoke tests/results/b8a_pooled_{STATE}_{SEED}_m{M_MIN}_R{R}.csv"
+pooled = pd.DataFrame(prow); pooled["cfg_hash"], pooled["git"] = CFG_HASH, GIT
+pooled.to_csv(pooled_file, index=False)
+print(f"\nsaved {pooled_file} (per-rep pooled)")
+
+out = pd.concat(allrows).drop(columns=["ngbin", "nun2", "rep"], errors="ignore").groupby(["gamma", "N", "cell"]).mean(numeric_only=True)
 out["cfg_hash"], out["git"] = CFG_HASH, GIT
 os.makedirs("smoke tests/results", exist_ok=True)
-outfile = f"smoke tests/results/b8a_coverage_{STATE}_{SEED}_m{M_MIN}_R{R}.csv"
+outfile = f"smoke tests/results/b8a_coverage_{STATE}_{SEED}_m{M_MIN}_R{R}.csv"   # legacy per-cell means, gitignored
 out.to_csv(outfile)
 print(f"\nsaved {outfile} (per-cell means)")
