@@ -14,3 +14,5 @@ Data and scripts live in `smoke tests/`. Run from the repo root:
 
 Pass check: CLT+composition arm, clean bin (nun = 0), coverage >= 0.94. `informative` is a threshold (>= 500 cell-reps) on MC-se precision, not a statistical test; `informative=False` rows are not evidence either way.
 At m_min >= 10 the n_g 1-9 bins are conservative from truncation; only the m_min=1 arm tests the se there.
+
+Notes on reading the pooled CSV: `passes` is a convenience flag (cov >= 0.94), not a test. Rows across gamma and N within a seed share the same population, score model and cells, so they are not independent. Use coverage with `mc_se`, not pass counts.
