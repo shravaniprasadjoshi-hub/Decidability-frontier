@@ -23,20 +23,26 @@ pip install folktables scikit-learn pandas numpy scipy pytest
 | 9 | `e5_sensitivities.py` (Rohini) | expected-count, δ-indexed sensitivity with separate disparity/parity shares and gated J=10 | source- and gamma-tagged `e5_sensitivities_*.csv` |
 | 10 | `e6_adversarial_kink.py` (Rohini) | appendix-only stress test at the clipping kink | `e6_adversarial_kink_*.csv` |
 
-Tests: `pytest test_bounds.py` (12; they check the code matches the writeup math)
+Tests: `pytest test_bounds.py` (19; they check the code matches the writeup math)
 Env vars: `STATE` (CA), `SEED` (0), `FLIP_SEED` (123), `R` (reps), `GAMMA` (b8c), `M_MIN` (b8c, default 10)
 `common.py` has the shared setup (`build(...)`)
 
 ## Rohini: E5/E6 status
 
-- **E5:** expected-count runner is implemented, but real outputs must be made
-  at one clean commit before being reported. Its primary arms are `(0,123)`,
-  `(1,456)`, and `(2,789)`; `(3,321)` is held out. The retained
+- **E5:** clean primary outputs for `(0,123)`, `(1,456)`, and `(2,789)` were
+  generated from code commit `1fab437c56`; their A12 realized-baseline check
+  passes for all three seeds. `(3,321)` is a held-out replication/provenance
+  check and is excluded from the primary aggregate; its existing local output
+  is dirty. The noise-`0.5` oracle delta maximizes over only 75--79/160 valid
+  entries, versus 128--130/160 at noise `1.0`, so it is not a comparable smooth
+  delta axis without a common-entry calculation. The retained
   `e5_sensitivities_SYNTHETIC_*.csv` file is offline logic testing only.
   `m_min=30` remains proposed. J=10 requires an ST1-generated diagnostic JSON
   plus team review, not an environment-variable assertion.
-- **E6:** appendix-only stress test; output records prediction ratios and an
-  ST1 regression comparison. It must not be framed as general undercoverage evidence.
+- **E6:** appendix-only stress test; the retained R=2000 output has
+  `prediction_ratio` 0.9389/0.9369/0.9683/0.9341 at J=1/5/20/50 and all four
+  ST1 absolute differences are below 0.20. It must not be framed as general
+  undercoverage evidence; its current CSV has dirty-run provenance.
 
 ## Findings so far (single state, seed, J = 5)
 - **ST1 kink:** no detectable undercoverage on Folktables profiles; the adversarial case (J >= 20, high rejection near the clip) does undercover. Footnote + appendix, not a contribution

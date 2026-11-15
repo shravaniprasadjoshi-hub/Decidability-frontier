@@ -116,13 +116,18 @@ propensity-oracle `delta`, identified-set width, unexplored mass, separate
 disparity/parity certified shares, and the number of cell-stratum entries
 omitted from the oracle-delta maximum by the 30-per-side rule. At fixed gamma,
 noise changes both selection and `delta_oracle`; compare noise arms against the
-reported `delta_oracle`, not as an isolated-noise effect.
+reported `delta_oracle`, not as an isolated-noise effect. More importantly,
+noise `0.5` is **not a comparable delta axis** in the current outputs: its
+oracle maximum uses only 75--79 of 160 cell--stratum entries after the
+30-per-side filter, versus 128--130 of 160 at noise `1.0`. These are different
+maximization sets, so do not plot or quote the noise-`0.5` values as a smooth
+delta comparison with noise `1.0` or A12 until a common-entry delta is reported.
 
 ```
 for s in 0 1 2; do
   SEED=$s python "smoke tests/e5_sensitivities.py"
 done
-# Held-out arm; report separately from primary arms.
+# Held-out replication/provenance check; never pool with the three primary arms.
 SEED=3 python "smoke tests/e5_sensitivities.py"
 ```
 
@@ -131,6 +136,10 @@ This writes source- and gamma-tagged files such as
 the distinct `SYNTHETIC` tag and `data_source=synthetic` column. Primary E5 uses
 `m_min={1,10}`. `m_min=30` is **proposed (O4), not acked**, and can only be run
 explicitly after team approval:
+
+The primary gamma grid ends at `0.05`; it does not cover the transition region
+above approximately `delta=0.06` where parity can break down in the
+identification-only (`z=0`) view.
 
 ```
 INCLUDE_PROPOSED_M30=1 SEED=0 python "smoke tests/e5_sensitivities.py"
@@ -152,7 +161,9 @@ INCLUDE_J10=1 J10_GATE_ARTIFACT="smoke tests/results/st1_j10_diagnostic.json" \
 Each CSV carries `git`, `cfg_hash`, `data_source`, `count_mode`, and any J=10
 diagnostic provenance. Retain the three primary-arm CSVs at one clean commit;
 do not quote E5 numbers from a `+dirty` run or use the table to claim an optimal
-`m_min`.
+`m_min`. The retained primary E5 CSVs were generated from clean code commit
+`1fab437c56`; the `eebac88` data commit adds those CSV artifacts only and makes
+no source changes, including to ST1 or ST2.
 
 Before reporting E5, verify that the separately reconstructed realised baseline
 matches the corresponding A12 arm:
@@ -161,11 +172,15 @@ matches the corresponding A12 arm:
 SEED=0 python scripts/check_e5_a12_consistency.py
 ```
 
-**Status (Rohini):** the runner is implemented. A file named
+**Status (Rohini):** the three primary real-data outputs for `(0,123)`,
+`(1,456)`, and `(2,789)` are retained with `git=1fab437c56`. The reconstructed
+A12 realized-baseline check passes for seeds 0, 1, and 2 with zero endpoint and
+delta differences. Arm `(3,321)` is held out as a separate replication and
+provenance check; its existing local output is dirty and is not a reportable
+primary result. A file named
 `e5_sensitivities_SYNTHETIC_*.csv` is retained solely as an offline logic-test
 artifact and has `data_source=synthetic` in every row; it must never be cited as
-a Folktables result. Real-data results must be regenerated after this change at
-a clean commit.
+a Folktables result.
 
 ### E6: adversarial kink appendix table (Rohini)
 
@@ -180,9 +195,13 @@ their ratio, plus a regression comparison to ST1's J=1/5/20/50 values. This
 deliberately adversarial calculation is an appendix stress test, not a general
 coverage or novelty claim.
 
-**Status (Rohini):** completed for seed 0 at 2,000 repetitions. The appendix
-table shows empirical bias/SD close to the pre-specified `0.41 * sqrt(J)`
-heuristic. It remains an adversarial appendix check only.
+**Status (Rohini):** completed for seed 0 at 2,000 repetitions; the retained
+`e6_adversarial_kink_s0_R2000.csv` reports prediction ratios `0.9389`, `0.9369`,
+`0.9683`, and `0.9341` for `J=1,5,20,50` at `n=10k`. Its absolute differences
+from the ST1 reference values are `0.0049`, `0.0111`, `0.0954`, and `0.0182`,
+respectively—each below `0.20`. It remains an adversarial appendix check only;
+its current CSV has dirty-run provenance and must be regenerated clean before
+external quotation.
 
 ### Early smoke tests (reference)
 ```
