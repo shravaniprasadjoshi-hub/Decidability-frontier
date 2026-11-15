@@ -107,6 +107,102 @@ python "smoke tests/b8c_trunc_diag.py"
 Smoke-run b8c at small R first (`R=5`) before a full run. Outputs `b8c_power_*.csv`, `b8c_crossover_*.csv`, `b8c_trunc_diag_CA.csv`.
 Pass rule: observed N50 within 2x of N*. Only flag=ok rows count; censored rows are reported separately.
 
+### E5: sensitivity table (Rohini)
+
+E5 is an A12-compatible, expected-count pool-level robustness table, not a
+replacement for E1 coverage. It reports identification-only rows (`z=0`) and
+CLT certificate rows (`z=1.645`, audit `N=20k`) separately. It reports the
+propensity-oracle `delta`, identified-set width, unexplored mass, separate
+disparity/parity certified shares, and the number of cell-stratum entries
+omitted from the oracle-delta maximum by the 30-per-side rule. At fixed gamma,
+noise changes both selection and `delta_oracle`; compare noise arms against the
+reported `delta_oracle`, not as an isolated-noise effect. More importantly,
+noise `0.5` is **not a comparable delta axis** in the current outputs: its
+oracle maximum uses only 75--79 of 160 cell--stratum entries after the
+30-per-side filter, versus 128--130 of 160 at noise `1.0`. These are different
+maximization sets, so do not plot or quote the noise-`0.5` values as a smooth
+delta comparison with noise `1.0` or A12 until a common-entry delta is reported.
+
+```
+for s in 0 1 2; do
+  SEED=$s python "smoke tests/e5_sensitivities.py"
+done
+# Held-out replication/provenance check; never pool with the three primary arms.
+SEED=3 python "smoke tests/e5_sensitivities.py"
+```
+
+This writes source- and gamma-tagged files such as
+`e5_sensitivities_ACS_CA_s0_f123_g0.03-0.04-0.05.csv`; synthetic files receive
+the distinct `SYNTHETIC` tag and `data_source=synthetic` column. Primary E5 uses
+`m_min={1,10}`. `m_min=30` is **proposed (O4), not acked**, and can only be run
+explicitly after team approval:
+
+The primary gamma grid ends at `0.05`; it does not cover the transition region
+above approximately `delta=0.06` where parity can break down in the
+identification-only (`z=0`) view.
+
+```
+INCLUDE_PROPOSED_M30=1 SEED=0 python "smoke tests/e5_sensitivities.py"
+```
+
+J=10 is excluded by default. First create an ST2 profile CSV with provenance,
+then create an ST1 diagnostic artifact. Team review of that artifact is required
+before the optional J=10 E5 run:
+
+```
+J_PROFILE=10 python "smoke tests/st2_conditional_delta.py"
+python "smoke tests/st1_kink_bias.py" profile \
+  "smoke tests/results/st2_profile_gt50k_stratum_noise1.0_J10.csv" \
+  --artifact-out "smoke tests/results/st1_j10_diagnostic.json"
+INCLUDE_J10=1 J10_GATE_ARTIFACT="smoke tests/results/st1_j10_diagnostic.json" \
+  SEED=0 python "smoke tests/e5_sensitivities.py"
+```
+
+Each CSV carries `git`, `cfg_hash`, `data_source`, `count_mode`, and any J=10
+diagnostic provenance. Retain the three primary-arm CSVs at one clean commit;
+do not quote E5 numbers from a `+dirty` run or use the table to claim an optimal
+`m_min`. The retained primary E5 CSVs were generated from clean code commit
+`1fab437c56`; the `eebac88` data commit adds those CSV artifacts only and makes
+no source changes, including to ST1 or ST2.
+
+Before reporting E5, verify that the separately reconstructed realised baseline
+matches the corresponding A12 arm:
+
+```
+SEED=0 python scripts/check_e5_a12_consistency.py
+```
+
+**Status (Rohini):** the three primary real-data outputs for `(0,123)`,
+`(1,456)`, and `(2,789)` are retained with `git=1fab437c56`. The reconstructed
+A12 realized-baseline check passes for seeds 0, 1, and 2 with zero endpoint and
+delta differences. Arm `(3,321)` is held out as a separate replication and
+provenance check; its existing local output is dirty and is not a reportable
+primary result. A file named
+`e5_sensitivities_SYNTHETIC_*.csv` is retained solely as an offline logic-test
+artifact and has `data_source=synthetic` in every row; it must never be cited as
+a Folktables result.
+
+### E6: adversarial kink appendix table (Rohini)
+
+```
+R=2000 SEED=0 python "smoke tests/e6_adversarial_kink.py"
+```
+
+The script places every stratum exactly at the lower clipping kink and writes
+`smoke tests/results/e6_adversarial_kink_s<SEED>_R<R>.csv`. It reports the empirical
+standardized bias alongside the pre-specified `0.41 * sqrt(J)` heuristic and
+their ratio, plus a regression comparison to ST1's J=1/5/20/50 values. This
+deliberately adversarial calculation is an appendix stress test, not a general
+coverage or novelty claim.
+
+**Status (Rohini):** completed for seed 0 at 2,000 repetitions; the retained
+`e6_adversarial_kink_s0_R2000.csv` reports prediction ratios `0.9389`, `0.9369`,
+`0.9683`, and `0.9341` for `J=1,5,20,50` at `n=10k`. Its absolute differences
+from the ST1 reference values are `0.0049`, `0.0111`, `0.0954`, and `0.0182`,
+respectively—each below `0.20`. It remains an adversarial appendix check only;
+its current CSV has dirty-run provenance and must be regenerated clean before
+external quotation.
+
 ### Early smoke tests (reference)
 ```
 python "smoke tests/st1_kink_bias.py"                 # kink bias, synthetic
@@ -119,7 +215,7 @@ python "smoke tests/se_check.py"                      # se calibration at delta 
 ## Settings (team-acked)
 
 - tau = 0.05 primary, 0.02 sensitivity. 
-- m_min = 10 primary (1 and 30 as sensitivity).
+- m_min = 10 primary; m_min = 1 is an acked sensitivity arm. m_min = 30 remains proposed (O4).
 - Holm over 2K = 62 hypotheses, per-cell uncorrected as secondary.
 - delta = propensity-based max over cell x stratum.
 - J = 5 primary.
@@ -133,6 +229,10 @@ python "smoke tests/se_check.py"                      # se calibration at delta 
 - **Error control (E2):** no wrong certificates under Holm or Shaffer at delta multiplier 1.0 in any arm (CP upper bound about 0.004 at R = 1000). This means validity was not contradicted, not that the procedure is tight. The multiplier-0.5 arm showed no degradation in this DGP, which is not evidence of robustness to misspecification.
 - **Frontier (E3):** disparity is certifiable but power-limited under Holm. Parity is practically unreachable at audit N, and at tau = 0.02 at any N.
 - **N sweep (E4):** the closed-form N* ignoring truncation is optimistic in small cells. A truncation-aware, expected-count N* fixes this, but both corrections were found post hoc. Arm 3:321 is the fresh-seed check. Under the truncation-aware expected-count N*, the pass rate is 1.0 across all 174 observed ok rows (0 failures), with 4 right-censored rows reported separately. The confirmatory arm (3, 321) has 27 ok rows and 0 failures.
+- **Sensitivity/kink (E5/E6):** E5 must be regenerated for the three primary
+  arms at a clean commit before any numbers are reported. J=10 needs a recorded
+  ST1 diagnostic artifact and team review. E6 is intentionally adversarial and
+  belongs in the appendix; it must not be used to claim broad undercoverage.
 
 ## Limitations
 
@@ -153,6 +253,7 @@ python "smoke tests/se_check.py"                      # se calibration at delta 
 - **Shreyashree**: Core statistical bounds and tests, controlled-Delta simulation arm, decidability frontier figures, N-sweep and truncation-aware diagnostic, provenance verification.
 - **Shravani**: Error-control and power experiments, multiplicity corrections (Holm/Shaffer).
 - **Madhu**: Coverage validation and pooling analysis across seeds and truncation thresholds.
+- **Rohini**: E5 robustness/sensitivity analysis and E6 adversarial kink appendix check.
 
 ## References
 
